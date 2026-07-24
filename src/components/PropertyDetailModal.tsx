@@ -1,0 +1,690 @@
+import React, { useState } from 'react';
+import { X, MapPin, Maximize, Bed, Bath, Car, Phone, Mail, Calendar, CheckCircle2, ChevronLeft, ChevronRight, Share2, Heart, ArrowUpRight, ShieldCheck, Trees, Video, Play, ExternalLink, Sparkles } from 'lucide-react';
+import { Property } from '../types';
+
+interface PropertyDetailModalProps {
+  property: Property | null;
+  currency: 'USD' | 'ARS';
+  onClose: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: (id: string) => void;
+  isAdmin?: boolean;
+  onEditProperty?: (property: Property) => void;
+}
+
+export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
+  property,
+  currency,
+  onClose,
+  isFavorite,
+  onToggleFavorite,
+  isAdmin,
+  onEditProperty,
+}) => {
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<'info' | 'video' | 'amenities' | 'location' | 'contact'>(
+    property?.videoUrl ? 'video' : 'info'
+  );
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [visitorName, setVisitorName] = useState('');
+  const [visitorPhone, setVisitorPhone] = useState('');
+  const [visitorMessage, setVisitorMessage] = useState(
+    property
+      ? `Hola MARIA EUGENIA FERNÁNDEZ Inmobiliaria, quisiera coordinar una visita para la propiedad Ref: ${property.refCode} (${property.title}).`
+      : ''
+  );
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
+
+  if (!property) return null;
+
+  const currentPhotoUrl = property.images[activeImageIndex] || property.images[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80';
+
+  const displayPrice = () => {
+    if ((!property.priceARS || property.priceARS <= 0) && (!property.priceUSD || property.priceUSD <= 0)) {
+      return 'Consultar';
+    }
+    if (property.priceARS && property.priceARS > 0) {
+      return `$ ${property.priceARS.toLocaleString('es-AR')} ARS`;
+    }
+    if (currency === 'USD' && property.priceUSD > 0) {
+      return `USD $${property.priceUSD.toLocaleString('en-US')}`;
+    }
+    const calculatedARS = property.priceUSD ? property.priceUSD * 1350 : 0;
+    if (calculatedARS > 0) {
+      return `$ ${calculatedARS.toLocaleString('es-AR')} ARS`;
+    }
+    return 'Consultar';
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactSubmitted(true);
+    setTimeout(() => {
+      setContactSubmitted(false);
+    }, 4000);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 3000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-5 animate-fadeIn">
+      <div className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] border border-zinc-200">
+        {/* TOP MODAL HEADER */}
+        <div className="bg-[#181818] text-white px-4 py-3 sm:px-5 flex items-center justify-between border-b border-[#48A82D] shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="bg-[#48A82D] text-white text-[11px] font-black px-2.5 py-0.5 rounded uppercase tracking-wider">
+              {property.operation}
+            </span>
+            <span className="text-xs text-zinc-300 font-medium hidden sm:inline">
+              Ref: <strong className="text-white">{property.refCode}</strong>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isAdmin && onEditProperty && (
+              <button
+                onClick={() => {
+                  onEditProperty(property);
+                  onClose();
+                }}
+                className="bg-[#48A82D] hover:bg-[#3C8F24] text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                title="Editar propiedad en Firebase"
+              >
+                <span>Editar Propiedad</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => onToggleFavorite(property.id)}
+              className="p-2 rounded-full hover:bg-white/10 text-white transition-colors cursor-pointer"
+              title="Guardar en favoritos"
+            >
+              <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#48A82D] text-[#48A82D]' : 'text-white'}`} />
+            </button>
+
+            <div className="relative">
+              <button
+                onClick={handleCopyLink}
+                className="p-2 rounded-full hover:bg-white/10 text-white transition-colors cursor-pointer"
+                title="Compartir enlace"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+              {copiedLink && (
+                <div className="absolute top-full right-0 mt-1 bg-[#48A82D] text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-lg whitespace-nowrap z-50 animate-fadeIn">
+                  ¡Enlace copiado!
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-white/10 text-white transition-colors cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* MODAL MAIN CONTENT */}
+        <div className="overflow-y-auto flex-1 p-3 sm:p-5 space-y-4">
+          {/* HERO SPLIT SECTION: PHOTOS (LEFT) + KEY DETAILS (RIGHT) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+            {/* LEFT COLUMN: IMAGE GALLERY */}
+            <div className="lg:col-span-7 flex flex-col justify-between space-y-3">
+              <div
+                onDoubleClick={() => setZoomImage(currentPhotoUrl)}
+                className="relative aspect-4/3 sm:aspect-4/3 lg:aspect-4/3 min-h-[280px] sm:min-h-[340px] lg:min-h-[380px] w-full rounded-2xl overflow-hidden bg-zinc-900 group shadow-md border border-zinc-200 cursor-zoom-in"
+                title="Haga doble clic para ampliar a pantalla completa"
+              >
+                <img
+                  src={currentPhotoUrl || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'}
+                  alt={property.title}
+                  className="w-full h-full object-cover transition-all duration-300 group-hover:scale-102"
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    img.onerror = null;
+                    img.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
+                  }}
+                />
+
+                {/* Double click instruction overlay badge */}
+                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
+                  <Maximize className="w-3 h-3 text-[#48A82D]" />
+                  <span>Doble clic para ampliar</span>
+                </div>
+
+                {/* Operation & Featured Overlay Badges */}
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                  <span className="bg-[#48A82D] text-white text-[11px] font-black px-3 py-1 rounded-lg uppercase tracking-wider shadow-md">
+                    {property.operation}
+                  </span>
+                  {property.featured && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-md">
+                      <Sparkles className="w-3 h-3" />
+                      <span>Destacada</span>
+                    </span>
+                  )}
+                </div>
+
+                {property.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImageIndex(
+                          (prev) => (prev - 1 + property.images.length) % property.images.length
+                        );
+                      }}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition-all cursor-pointer shadow-lg"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImageIndex((prev) => (prev + 1) % property.images.length);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition-all cursor-pointer shadow-lg"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+
+                    <div className="absolute bottom-3 right-3 bg-black/75 text-white text-[11px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs">
+                      {activeImageIndex + 1} / {property.images.length}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Thumbnail selector strip */}
+              {property.images.length > 1 && (
+                <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+                  {property.images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      onDoubleClick={() => setZoomImage(img)}
+                      className={`relative w-20 h-16 sm:w-24 sm:h-18 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                        idx === activeImageIndex
+                          ? 'border-[#48A82D] scale-102 shadow-md ring-2 ring-[#48A82D]/20'
+                          : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                      title="Haz un clic para seleccionar, o doble clic para ampliar"
+                    >
+                      <img
+                        src={img}
+                        alt={`Foto ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.onerror = null;
+                          target.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN: ESSENTIAL INFO (TITLE, PRICE, SPECS & ACTIONS) */}
+            <div className="lg:col-span-5 flex flex-col justify-between bg-zinc-50 p-4 rounded-2xl border border-zinc-200 gap-3">
+              <div className="space-y-2.5">
+                {/* Category & Zone */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#48A82D] uppercase tracking-wider">
+                    <span>{property.type}</span>
+                    <span className="text-zinc-400 font-normal">/</span>
+                    <span>{property.location.zone}</span>
+                  </div>
+                </div>
+
+                {/* Main Title */}
+                <h2 className="text-lg sm:text-xl font-extrabold text-zinc-900 leading-snug">
+                  {property.title}
+                </h2>
+
+                {/* Address */}
+                <p className="text-xs text-zinc-600 flex items-center gap-1.5 font-medium">
+                  <MapPin className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
+                  <span>
+                    {property.location.address}, {property.location.zone}, {property.location.city}
+                  </span>
+                </p>
+
+                {/* Price Display */}
+                <div className="bg-white p-3.5 rounded-xl border border-zinc-200 shadow-xs">
+                  <span className="text-[9px] text-zinc-400 font-bold uppercase block tracking-wider">
+                    Precio de Lista
+                  </span>
+                  <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                    <span className={`text-xl sm:text-2xl font-black ${displayPrice() === 'Consultar' ? 'text-[#48A82D]' : 'text-zinc-900'}`}>
+                      {displayPrice()}
+                    </span>
+                  </div>
+                  {Boolean(property.expensesARS && property.expensesARS > 0) && (
+                    <span className="text-[11px] text-zinc-500 block font-medium mt-0.5">
+                      + Expensas: ${property.expensesARS?.toLocaleString()} ARS
+                    </span>
+                  )}
+                </div>
+
+                {/* 2x2 SPECS GRID */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white p-2.5 rounded-xl border border-zinc-200 flex items-center gap-2">
+                    <div className="p-1.5 bg-[#48A82D]/10 text-[#48A82D] rounded-lg">
+                      <Maximize className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-[8px] text-zinc-400 font-bold uppercase block">Superficie</span>
+                      <span className="text-xs font-bold text-zinc-800">{property.coveredArea} m² cub.</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-2.5 rounded-xl border border-zinc-200 flex items-center gap-2">
+                    <div className="p-1.5 bg-[#48A82D]/10 text-[#48A82D] rounded-lg">
+                      <Bed className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-[8px] text-zinc-400 font-bold uppercase block">Dormitorios</span>
+                      <span className="text-xs font-bold text-zinc-800">
+                        {property.bedrooms > 0 ? `${property.bedrooms} dorm.` : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-2.5 rounded-xl border border-zinc-200 flex items-center gap-2">
+                    <div className="p-1.5 bg-[#48A82D]/10 text-[#48A82D] rounded-lg">
+                      <Bath className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-[8px] text-zinc-400 font-bold uppercase block">Baños</span>
+                      <span className="text-xs font-bold text-zinc-800">
+                        {property.bathrooms > 0 ? `${property.bathrooms} baños` : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-2.5 rounded-xl border border-zinc-200 flex items-center gap-2">
+                    <div className="p-1.5 bg-[#48A82D]/10 text-[#48A82D] rounded-lg">
+                      <Car className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-[8px] text-zinc-400 font-bold uppercase block">Cocheras</span>
+                      <span className="text-xs font-bold text-zinc-800">
+                        {property.garages > 0 ? `${property.garages} coch.` : 'Sin coch.'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* QUICK ACTION BUTTONS */}
+              <div className="space-y-1.5 pt-1 border-t border-zinc-200">
+                <a
+                  href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20Ref:%20${property.refCode}%20(${encodeURIComponent(property.title)})`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#48A82D] hover:bg-[#3C8F24] text-white py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Consultar por WhatsApp</span>
+                </a>
+
+                <button
+                  onClick={() => setActiveTab('contact')}
+                  className="w-full bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-300 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Calendar className="w-4 h-4 text-[#48A82D]" />
+                  <span>Agendar / Enviar Formulario</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* TAB NAVIGATION */}
+          <div className="border-b border-zinc-200 flex flex-wrap gap-2 sm:gap-4">
+            <button
+              onClick={() => setActiveTab('info')}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 cursor-pointer ${
+                activeTab === 'info'
+                  ? 'border-[#48A82D] text-[#48A82D]'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              Descripción
+            </button>
+            <button
+              onClick={() => setActiveTab('video')}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'video'
+                  ? 'border-[#48A82D] text-[#48A82D]'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              <Video className="w-4 h-4 text-rose-500" />
+              <span>Video Tour / IG</span>
+              {property.videoUrl && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('amenities')}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 cursor-pointer ${
+                activeTab === 'amenities'
+                  ? 'border-[#48A82D] text-[#48A82D]'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              Amenities
+            </button>
+            <button
+              onClick={() => setActiveTab('location')}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 cursor-pointer ${
+                activeTab === 'location'
+                  ? 'border-[#48A82D] text-[#48A82D]'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              Ubicación
+            </button>
+            <button
+              onClick={() => setActiveTab('contact')}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 cursor-pointer ${
+                activeTab === 'contact'
+                  ? 'border-[#48A82D] text-[#48A82D]'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              Agendar Visita
+            </button>
+          </div>
+
+          {/* TAB CONTENT */}
+          {activeTab === 'video' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 flex items-center gap-2">
+                    <Video className="w-5 h-5 text-rose-600" />
+                    <span>Video Tour de la Propiedad</span>
+                  </h3>
+                  <p className="text-xs text-zinc-500">
+                    Recorrido audiovisual publicado por MARIA EUGENIA FERNÁNDEZ Inmobiliaria
+                  </p>
+                </div>
+
+                {property.instagramUrl && (
+                  <a
+                    href={property.instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold shadow-sm hover:opacity-90 transition-opacity"
+                  >
+                    <span>Ver Reel en Instagram</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+
+              {property.videoUrl ? (
+                <div className="relative rounded-2xl overflow-hidden bg-black aspect-16/9 shadow-lg border border-zinc-800">
+                  <video
+                    src={property.videoUrl}
+                    controls
+                    autoPlay
+                    loop
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-8 text-center space-y-3">
+                  <Video className="w-10 h-10 text-zinc-400 mx-auto" />
+                  <h4 className="font-bold text-zinc-800 text-sm">Video individual en edición</h4>
+                  <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                    Podés solicitar el video completo del recorrido directo a nuestro WhatsApp o ver nuestros Reels actualizados en Instagram.
+                  </p>
+                  <a
+                    href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20solicitar%20el%20video%20de%20la%20propiedad%20Ref:%20${property.refCode}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#48A82D] text-white rounded-xl text-xs font-bold"
+                  >
+                    <span>Pedir Video por WhatsApp</span>
+                    <Phone className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === 'info' && (
+            <div className="space-y-4">
+              <h3 className="text-base font-bold text-zinc-900">Detalles de la propiedad</h3>
+              <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">
+                {property.description}
+              </p>
+
+              {/* LOTE SPECIFIC FEATURES IF APPLICABLE */}
+              {property.lotFeatures && (
+                <div className="mt-4 bg-[#48A82D]/10 border border-[#48A82D]/30 p-4 rounded-xl space-y-2 text-xs">
+                  <h4 className="font-bold text-zinc-900 flex items-center gap-1.5 text-sm">
+                    <Trees className="w-4 h-4 text-[#48A82D]" />
+                    <span>Datos Técnicos del Lote</span>
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-zinc-800 font-medium">
+                    {property.lotFeatures.frontageMeters && (
+                      <div>Frente: <strong>{property.lotFeatures.frontageMeters} metros</strong></div>
+                    )}
+                    {property.lotFeatures.depthMeters && (
+                      <div>Fondo: <strong>{property.lotFeatures.depthMeters} metros</strong></div>
+                    )}
+                    <div>Salida al Agua: <strong>{property.lotFeatures.waterAccess ? 'Sí (Directa)' : 'No'}</strong></div>
+                    {property.lotFeatures.fosiFos && (
+                      <div>Factibilidad: <strong>{property.lotFeatures.fosiFos}</strong></div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'amenities' && (
+            <div className="space-y-4">
+              <h3 className="text-base font-bold text-zinc-900">Amenities & Equipamiento</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {property.amenities.map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-2 p-3 bg-zinc-50 rounded-xl border border-zinc-200 text-xs font-semibold text-zinc-800"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-[#48A82D]" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'location' && (
+            <div className="space-y-4">
+              <h3 className="text-base font-bold text-zinc-900">Ubicación aproximada</h3>
+              <div className="bg-zinc-100 rounded-2xl h-64 relative overflow-hidden flex items-center justify-center border border-zinc-200">
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80')] bg-cover bg-center opacity-60"></div>
+                <div className="relative bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-lg text-center max-w-sm border border-zinc-200">
+                  <MapPin className="w-8 h-8 text-[#48A82D] mx-auto mb-1 animate-bounce" />
+                  <p className="text-xs font-bold text-zinc-900">{property.location.address}</p>
+                  <p className="text-[11px] text-zinc-600">{property.location.zone}, {property.location.city}</p>
+                  <span className="inline-block mt-2 text-[10px] bg-[#48A82D] text-white font-bold px-2.5 py-1 rounded">
+                    Ubicación Confirmada
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'contact' && (
+            <div className="space-y-4">
+              <h3 className="text-base font-bold text-zinc-900">Coordinar una visita o hacer una consulta</h3>
+              {contactSubmitted ? (
+                <div className="p-4 bg-[#48A82D]/10 border border-[#48A82D] text-zinc-800 rounded-xl text-sm font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-[#48A82D]" />
+                  <span>¡Mensaje enviado con éxito! Un asesor de MARIA EUGENIA FERNÁNDEZ Inmobiliaria te responderá a la brevedad.</span>
+                </div>
+              ) : (
+                <form onSubmit={handleFormSubmit} className="space-y-3 bg-zinc-50 p-4 rounded-2xl border border-zinc-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-zinc-600 mb-1 block">Tu Nombre y Apellido</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej: Juan Pérez"
+                        value={visitorName}
+                        onChange={(e) => setVisitorName(e.target.value)}
+                        className="w-full bg-white border border-zinc-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#48A82D]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-zinc-600 mb-1 block">Teléfono / WhatsApp</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="Ej: 11 5521 8899"
+                        value={visitorPhone}
+                        onChange={(e) => setVisitorPhone(e.target.value)}
+                        className="w-full bg-white border border-zinc-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#48A82D]"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-zinc-600 mb-1 block">Mensaje</label>
+                    <textarea
+                      rows={3}
+                      value={visitorMessage}
+                      onChange={(e) => setVisitorMessage(e.target.value)}
+                      className="w-full bg-white border border-zinc-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#48A82D]"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-[#48A82D] hover:bg-[#3C8F24] text-white py-3 rounded-xl font-bold text-sm transition-all cursor-pointer shadow-md"
+                  >
+                    Enviar Consulta Directa
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* AGENT CARD FOOTER */}
+          <div className="bg-zinc-50 p-5 rounded-2xl border border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <img
+                src={property.agent.avatar}
+                alt={property.agent.name}
+                className="w-12 h-12 rounded-full object-cover border-2 border-[#48A82D]"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.onerror = null;
+                  target.src = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80';
+                }}
+              />
+              <div>
+                <span className="text-[10px] text-[#48A82D] font-bold uppercase block tracking-wider">
+                  Asesor Comercial Asignado
+                </span>
+                <h4 className="text-sm font-bold text-zinc-900">{property.agent.name}</h4>
+                <p className="text-xs text-zinc-500">{property.agent.email}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <a
+                href={`https://wa.me/5491155218899?text=${encodeURIComponent(visitorMessage)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-[#48A82D] hover:bg-[#3C8F24] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+              >
+                <Phone className="w-4 h-4" />
+                <span>WhatsApp Asesor</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FULLSCREEN LIGHTBOX ZOOM MODAL (DOUBLE-CLICK ZOOM) */}
+      {zoomImage && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 animate-fadeIn"
+          onClick={() => setZoomImage(null)}
+        >
+          <div className="w-full flex items-center justify-between text-white max-w-6xl">
+            <div className="text-xs font-bold text-zinc-300">
+              Ref: <span className="text-[#48A82D]">{property.refCode}</span> — {property.title}
+            </div>
+            <button
+              onClick={() => setZoomImage(null)}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors"
+              title="Cerrar vista ampliada"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="relative max-w-6xl max-h-[85vh] flex items-center justify-center overflow-hidden my-auto p-2">
+            <img
+              src={zoomImage}
+              alt="Foto ampliada"
+              className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.onerror = null;
+                target.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            {property.images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const idx = property.images.indexOf(zoomImage);
+                    const prevIdx = idx > 0 ? idx - 1 : property.images.length - 1;
+                    setZoomImage(property.images[prevIdx]);
+                    setActiveImageIndex(prevIdx);
+                  }}
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/70 hover:bg-black text-white transition-all cursor-pointer shadow-xl border border-zinc-700"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const idx = property.images.indexOf(zoomImage);
+                    const nextIdx = idx < property.images.length - 1 ? idx + 1 : 0;
+                    setZoomImage(property.images[nextIdx]);
+                    setActiveImageIndex(nextIdx);
+                  }}
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/70 hover:bg-black text-white transition-all cursor-pointer shadow-xl border border-zinc-700"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="text-center text-xs text-zinc-400 font-medium">
+            Haz clic fuera de la imagen o presiona la cruz para cerrar
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,6 @@
+{
+  "name": "MEF Negocios Inmobiliarios",
+  "description": "Rediseño moderno y minimalista para MEF Negocios Inmobiliarios. Buscador de propiedades en Venta, Alquiler y Lotes con filtros avanzados.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

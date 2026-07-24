@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --mef-black: #181818;
+    --mef-dark: #1E1E1E;
+    --mef-gray-dark: #2A2A2A;
+    --mef-green: #48A82D;
+    --mef-green-hover: #3C8F24;
+    --mef-green-light: #EBF7E8;
+    --mef-green-border: #A2DC90;
+    --mef-light-bg: #F8FAF7;
+    --mef-cream: #FAFBF9;
+  }
+}
+
+.font-serif-brand {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #48A82D;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3C8F24;
+}
+
+.bg-brand-pattern {
+  background-color: #181818;
+  background-image: radial-gradient(#48A82D 0.85px, transparent 0.85px), radial-gradient(#48A82D 0.85px, #181818 0.85px);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
+}
+
+/* Hide scrollbar for clean horizontal gallery scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
