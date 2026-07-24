@@ -146,11 +146,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                   src={currentPhotoUrl || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'}
                   alt={property.title}
                   className="w-full h-full object-cover transition-all duration-300 group-hover:scale-102"
-                  onError={(e) => {
-                    const img = e.currentTarget;
-                    img.onerror = null;
-                    img.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
-                  }}
+                  onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
                 />
 
                 {/* Double click instruction overlay badge */}
@@ -221,11 +217,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                         src={img}
                         alt={`Foto ${idx + 1}`}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          target.onerror = null;
-                          target.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
-                        }}
+                        onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
                       />
                     </button>
                   ))}
@@ -589,11 +581,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 src={property.agent.avatar}
                 alt={property.agent.name}
                 className="w-12 h-12 rounded-full object-cover border-2 border-[#48A82D]"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  target.onerror = null;
-                  target.src = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80';
-                }}
+                onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80'; }}
               />
               <div>
                 <span className="text-[10px] text-[#48A82D] font-bold uppercase block tracking-wider">
@@ -643,11 +631,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               src={zoomImage}
               alt="Foto ampliada"
               className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
-              onError={(e) => {
-                const target = e.currentTarget;
-                target.onerror = null;
-                target.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
-              }}
+              onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
               onClick={(e) => e.stopPropagation()}
             />
             {property.images.length > 1 && (

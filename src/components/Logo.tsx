@@ -25,11 +25,7 @@ export const Logo: React.FC<LogoProps> = ({
     <div className={`inline-flex items-center select-none ${className}`}>
       <img
         src={primarySrc}
-        onError={(e) => {
-          const img = e.currentTarget;
-          img.onerror = null;
-          img.src = '/MEF_logo_svg.png';
-        }}
+        onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
         alt="MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios"
         className={`${heightClasses[size]} w-auto object-contain transition-transform duration-300 hover:scale-102 filter drop-shadow-xs`}
       />

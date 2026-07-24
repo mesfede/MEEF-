@@ -718,9 +718,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               const img = e.currentTarget;
-                              img.onerror = null;
-                              img.src =
-                                'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
+                              if (img.dataset.hasError) return; img.dataset.hasError = 'true'; img.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
                             }}
                           />
 

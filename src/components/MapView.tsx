@@ -49,11 +49,7 @@ export const MapView: React.FC<MapViewProps> = ({
         <div className="flex items-center gap-3">
           <img
             src="/mef-logo-white.png"
-            onError={(e) => {
-              const img = e.currentTarget;
-              img.onerror = null;
-              img.src = '/MEF_logo_svg.png';
-            }}
+            onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
             alt="MEF Logo"
             className="h-8 w-auto object-contain"
           />
@@ -130,11 +126,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   <div className="w-8 h-8 rounded-lg bg-zinc-900 p-1 flex items-center justify-center shrink-0 border border-zinc-700">
                     <img
                       src="/mef-logo-white.png"
-                      onError={(e) => {
-                        const img = e.currentTarget;
-                        img.onerror = null;
-                        img.src = '/MEF_logo_svg.png';
-                      }}
+                      onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
                       alt="MEF"
                       className="w-full h-auto object-contain"
                     />
@@ -173,11 +165,7 @@ export const MapView: React.FC<MapViewProps> = ({
               src={activeProp.images?.[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'}
               alt={activeProp.title}
               className="w-20 h-20 rounded-xl object-cover shrink-0 border border-zinc-200"
-              onError={(e) => {
-                const img = e.currentTarget;
-                img.onerror = null;
-                img.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
-              }}
+              onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
             />
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between gap-2">
@@ -250,11 +238,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 src={p.images?.[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'}
                 alt={p.title}
                 className="w-16 h-16 rounded-lg object-cover"
-                onError={(e) => {
-                  const img = e.currentTarget;
-                  img.onerror = null;
-                  img.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
-                }}
+                onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
               />
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center justify-between">

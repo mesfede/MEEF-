@@ -54,11 +54,7 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
           <div className="flex items-center gap-3">
             <img
               src="/mef-logo-white.png"
-              onError={(e) => {
-                const img = e.currentTarget;
-                img.onerror = null;
-                img.src = '/MEF_logo_svg.png';
-              }}
+              onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
               alt="MEF Negocios Inmobiliarios"
               className="h-9 sm:h-10 w-auto object-contain"
             />
@@ -227,11 +223,7 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
                   <div className="w-10 h-10 rounded-xl bg-zinc-900 p-1 flex items-center justify-center shrink-0 border border-zinc-700">
                     <img
                       src="/mef-logo-white.png"
-                      onError={(e) => {
-                        const img = e.currentTarget;
-                        img.onerror = null;
-                        img.src = '/MEF_logo_svg.png';
-                      }}
+                      onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
                       alt="MEF"
                       className="w-full h-auto object-contain"
                     />
