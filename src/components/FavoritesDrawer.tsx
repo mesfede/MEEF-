@@ -39,9 +39,9 @@ export const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
   };
 
   const shareFavoritesWhatsApp = () => {
-    const refs = favoriteProperties.map((p) => `${p.title} (Ref: ${p.refCode})`).join('\n- ');
+    const items = favoriteProperties.map((p) => `${p.title} (${p.location.zone})`).join('\n- ');
     const text = encodeURIComponent(
-      `Hola MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios, estuve guardando estas propiedades y quisiera más información:\n- ${refs}`
+      `Hola MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios, estuve guardando estas propiedades y quisiera más información:\n- ${items}`
     );
     window.open(`https://wa.me/5491155218899?text=${text}`, '_blank');
   };
@@ -95,7 +95,7 @@ export const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-[#48A82D] uppercase tracking-wider">
-                      {p.operation} • Ref {p.refCode}
+                      {p.operation} • {p.location.zone}
                     </span>
                     <button
                       onClick={() => onRemoveFavorite(p.id)}

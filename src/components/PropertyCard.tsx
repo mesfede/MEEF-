@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MapPin, Maximize, Bed, Bath, Car, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Sparkles, Edit3, Trash2 } from 'lucide-react';
+import { Heart, MapPin, Maximize, Bed, Bath, Car, Trees, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Star, Flame, Instagram, Edit3, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { Property } from '../types';
 
 interface PropertyCardProps {
@@ -11,6 +11,8 @@ interface PropertyCardProps {
   isAdmin?: boolean;
   onEditProperty?: (property: Property) => void;
   onDeleteProperty?: (id: string) => void;
+  onMoveUpProperty?: (id: string) => void;
+  onMoveDownProperty?: (id: string) => void;
 }
 
 export const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -22,6 +24,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   isAdmin,
   onEditProperty,
   onDeleteProperty,
+  onMoveUpProperty,
+  onMoveDownProperty,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -56,13 +60,14 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const getOperationBadgeColor = () => {
     switch (property.operation) {
       case 'VENTA':
-        return 'bg-[#181818] text-white border border-zinc-700';
+        return 'bg-black text-white';
       case 'ALQUILER':
-        return 'bg-zinc-800 text-white';
+      case 'ALQUILER TEMPORAL':
+        return 'bg-zinc-500 text-white';
       case 'LOTES':
         return 'bg-[#48A82D] text-white';
       default:
-        return 'bg-zinc-800 text-white';
+        return 'bg-black text-white';
     }
   };
 
@@ -76,6 +81,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
         />
+        
+        {/* Subtle Logo Watermark Overlay */}
+        <div className="absolute bottom-3 right-3 pointer-events-none opacity-[0.4] z-10 w-12 h-12">
+          <img src="/logo-white.png" alt="" className="w-full h-full object-contain" />
+        </div>
 
         {/* Carousel arrows */}
         {property.images.length > 1 && (
@@ -113,25 +123,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             {property.operation}
           </span>
           {property.isRecentlyUploaded && (
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-amber-500 text-black uppercase tracking-wider flex items-center gap-1 shadow-md animate-pulse">
-              <Sparkles className="w-3 h-3 fill-black text-black" />
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-yellow-400 text-yellow-950 uppercase tracking-wider flex items-center gap-1 shadow-md">
+              <Flame className="w-3 h-3 fill-yellow-950 text-yellow-950" />
               <span>RECIÉN SUBIDA</span>
             </span>
           )}
-          {property.featured && !property.isRecentlyUploaded && (
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-[#48A82D] text-white uppercase tracking-wider">
-              DESTACADO
-            </span>
-          )}
-          {property.videoUrl && (
+          {(property.videoUrl || property.instagramUrl) && (
             <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-rose-600 text-white uppercase tracking-wider flex items-center gap-1 shadow-sm">
-              <Play className="w-3 h-3 fill-white" />
-              <span>VIDEO TOUR / IG</span>
+              <Instagram className="w-3.5 h-3.5 text-white shrink-0" />
+              <span>VIDEO IG</span>
             </span>
           )}
-          <span className="text-[10px] font-semibold px-2 py-1 rounded-md bg-black/60 backdrop-blur-xs text-white">
-            Ref: {property.refCode}
-          </span>
         </div>
 
         {/* Favorite Button */}
@@ -182,41 +184,45 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* SPECS STRIP */}
-        <div className="pt-3 border-t border-zinc-100 grid grid-cols-4 gap-2 text-center text-xs text-zinc-600 bg-zinc-50/80 p-2.5 rounded-xl">
+        <div className="pt-3 border-t border-zinc-100 grid grid-cols-4 gap-1.5 text-center bg-zinc-50/90 py-3 px-2 rounded-xl">
           {property.operation === 'LOTES' || property.type === 'Lote / Terreno' ? (
             <>
-              <div className="col-span-2 flex flex-col items-center">
-                <span className="text-[10px] text-zinc-400 font-semibold uppercase">Superficie Lote</span>
-                <span className="font-bold text-zinc-800">{property.totalArea} m²</span>
+              <div className="col-span-2 flex flex-col items-center justify-center">
+                <span className="font-extrabold text-zinc-900 text-sm leading-none">{property.totalArea} m²</span>
+                <Maximize className="w-[22px] h-[22px] text-[#48A82D] mt-2" />
               </div>
-              <div className="col-span-2 flex flex-col items-center">
-                <span className="text-[10px] text-zinc-400 font-semibold uppercase">Acceso Agua</span>
-                <span className="font-bold text-[#48A82D]">
-                  {property.lotFeatures?.waterAccess ? 'Sí (Al Lago)' : 'Terreno Plano'}
+              <div className="col-span-2 flex flex-col items-center justify-center">
+                <span className="font-extrabold text-[#48A82D] text-xs leading-none">
+                  {property.lotFeatures?.waterAccess ? 'Agua' : 'Plano'}
                 </span>
+                <Trees className="w-[22px] h-[22px] text-[#48A82D] mt-2" />
               </div>
             </>
           ) : (
             <>
-              <div className="flex flex-col items-center">
-                <Maximize className="w-3.5 h-3.5 text-[#48A82D] mb-0.5" />
-                <span className="font-bold text-zinc-800">{property.coveredArea > 0 ? `${property.coveredArea} m²` : '—'}</span>
-                <span className="text-[9px] text-zinc-400">Cubiertos</span>
+              <div className="flex flex-col items-center justify-center">
+                <span className="font-extrabold text-zinc-900 text-sm sm:text-base leading-none">
+                  {property.coveredArea > 0 ? `${property.coveredArea} m²` : '—'}
+                </span>
+                <Maximize className="w-[22px] h-[22px] text-[#48A82D] mt-2" />
               </div>
-              <div className="flex flex-col items-center">
-                <Bed className="w-3.5 h-3.5 text-[#48A82D] mb-0.5" />
-                <span className="font-bold text-zinc-800">{property.bedrooms > 0 ? property.bedrooms : '—'}</span>
-                <span className="text-[9px] text-zinc-400">Dorm.</span>
+              <div className="flex flex-col items-center justify-center">
+                <span className="font-extrabold text-zinc-900 text-sm sm:text-base leading-none">
+                  {property.bedrooms > 0 ? property.bedrooms : '—'}
+                </span>
+                <Bed className="w-[22px] h-[22px] text-[#48A82D] mt-2" />
               </div>
-              <div className="flex flex-col items-center">
-                <Bath className="w-3.5 h-3.5 text-[#48A82D] mb-0.5" />
-                <span className="font-bold text-zinc-800">{property.bathrooms > 0 ? property.bathrooms : '—'}</span>
-                <span className="text-[9px] text-slate-400">Baños</span>
+              <div className="flex flex-col items-center justify-center">
+                <span className="font-extrabold text-zinc-900 text-sm sm:text-base leading-none">
+                  {property.bathrooms > 0 ? property.bathrooms : '—'}
+                </span>
+                <Bath className="w-[22px] h-[22px] text-[#48A82D] mt-2" />
               </div>
-              <div className="flex flex-col items-center">
-                <Car className="w-3.5 h-3.5 text-[#48A82D] mb-0.5" />
-                <span className="font-bold text-zinc-800">{property.garages > 0 ? property.garages : '—'}</span>
-                <span className="text-[9px] text-zinc-400">Cocheras</span>
+              <div className="flex flex-col items-center justify-center">
+                <span className="font-extrabold text-zinc-900 text-sm sm:text-base leading-none">
+                  {property.garages > 0 ? property.garages : '—'}
+                </span>
+                <Car className="w-[22px] h-[22px] text-[#48A82D] mt-2" />
               </div>
             </>
           )}
@@ -254,6 +260,30 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <div className="pt-2 flex items-center gap-1.5">
             {isAdmin && (
               <>
+                {onMoveUpProperty && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveUpProperty(property.id);
+                    }}
+                    className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 p-2 rounded-lg text-xs font-bold transition-colors cursor-pointer border border-emerald-300"
+                    title="Mover propiedad arriba en el catálogo"
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {onMoveDownProperty && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveDownProperty(property.id);
+                    }}
+                    className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 p-2 rounded-lg text-xs font-bold transition-colors cursor-pointer border border-emerald-300"
+                    title="Mover propiedad abajo en el catálogo"
+                  >
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -286,7 +316,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             </button>
 
             <a
-              href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20Ref:%20${property.refCode}%20(${encodeURIComponent(property.title)})`}
+              href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20${encodeURIComponent(property.title)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-2 bg-[#48A82D] hover:bg-[#3C8F24] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"

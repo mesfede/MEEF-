@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { X, MapPin, Maximize, Bed, Bath, Car, Phone, Mail, Calendar, CheckCircle2, ChevronLeft, ChevronRight, Share2, Heart, ArrowUpRight, ShieldCheck, Trees, Video, Play, ExternalLink, Sparkles } from 'lucide-react';
+
+const getInstagramEmbedUrl = (url?: string): string | null => {
+  if (!url) return null;
+  const match = url.match(/instagram\.com\/(?:p|reel|reels)\/([A-Za-z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://www.instagram.com/p/${match[1]}/embed/`;
+  }
+  return null;
+};
+import React, { useState, useRef, useEffect } from 'react';
+import { X, MapPin, Maximize, Bed, Bath, Car, Phone, Mail, CheckCircle2, ChevronLeft, ChevronRight, Share2, Heart, Trees, Video, ExternalLink, Star, FileText, Plus, Minus, Home } from 'lucide-react';
 import { Property } from '../types';
 
 interface PropertyDetailModalProps {
@@ -22,23 +31,35 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   onEditProperty,
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'info' | 'video' | 'amenities' | 'location' | 'contact'>(
-    property?.videoUrl ? 'video' : 'info'
-  );
-  const [contactSubmitted, setContactSubmitted] = useState(false);
-  const [visitorName, setVisitorName] = useState('');
-  const [visitorPhone, setVisitorPhone] = useState('');
-  const [visitorMessage, setVisitorMessage] = useState(
-    property
-      ? `Hola MARIA EUGENIA FERNÁNDEZ Inmobiliaria, quisiera coordinar una visita para la propiedad Ref: ${property.refCode} (${property.title}).`
-      : ''
+  const [activeTab, setActiveTab] = useState<'info' | 'video' | 'amenities' | 'location'>(
+    property?.videoUrl || property?.instagramUrl ? 'video' : 'info'
   );
   const [copiedLink, setCopiedLink] = useState(false);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [mapZoom, setMapZoom] = useState<number>(15);
+
+  const thumbnailRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll active thumbnail into view
+  useEffect(() => {
+    if (thumbnailRef.current) {
+      const activeEl = thumbnailRef.current.children[activeImageIndex] as HTMLElement;
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeImageIndex]);
 
   if (!property) return null;
 
   const currentPhotoUrl = property.images[activeImageIndex] || property.images[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80';
+
+  const scrollThumbnails = (direction: 'left' | 'right') => {
+    if (thumbnailRef.current) {
+      const scrollAmount = direction === 'left' ? -260 : 260;
+      thumbnailRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   const displayPrice = () => {
     if ((!property.priceARS || property.priceARS <= 0) && (!property.priceUSD || property.priceUSD <= 0)) {
@@ -57,32 +78,27 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
     return 'Consultar';
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setContactSubmitted(true);
-    setTimeout(() => {
-      setContactSubmitted(false);
-    }, 4000);
-  };
-
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 3000);
   };
 
+  // Google Maps location query
+  const mapQuery = property.location.lat && property.location.lng
+    ? `${property.location.lat},${property.location.lng}`
+    : encodeURIComponent(`${property.location.address}, ${property.location.zone}, ${property.location.city}, Argentina`);
+
+  const mapEmbedUrl = `https://maps.google.com/maps?q=${mapQuery}&z=${mapZoom}&output=embed`;
+  const externalGoogleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-5 animate-fadeIn">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-5 animate-fadeIn">
       <div className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] border border-zinc-200">
         {/* TOP MODAL HEADER */}
         <div className="bg-[#181818] text-white px-4 py-3 sm:px-5 flex items-center justify-between border-b border-[#48A82D] shrink-0">
           <div className="flex items-center gap-3">
-            <span className="bg-[#48A82D] text-white text-[11px] font-black px-2.5 py-0.5 rounded uppercase tracking-wider">
-              {property.operation}
-            </span>
-            <span className="text-xs text-zinc-300 font-medium hidden sm:inline">
-              Ref: <strong className="text-white">{property.refCode}</strong>
-            </span>
+            <img src="/logo-white.png" alt="Inmobiliaria" className="h-10 sm:h-12 w-auto object-contain" />
           </div>
 
           <div className="flex items-center gap-2">
@@ -149,6 +165,11 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                   onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
                 />
 
+                {/* Subtle Logo Watermark Overlay */}
+                <div className="absolute bottom-4 right-4 pointer-events-none opacity-[0.4] z-10 w-16 h-16">
+                  <img src="/logo-white.png" alt="" className="w-full h-full object-contain drop-shadow-md" />
+                </div>
+
                 {/* Double click instruction overlay badge */}
                 <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
                   <Maximize className="w-3 h-3 text-[#48A82D]" />
@@ -157,13 +178,19 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
                 {/* Operation & Featured Overlay Badges */}
                 <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <span className="bg-[#48A82D] text-white text-[11px] font-black px-3 py-1 rounded-lg uppercase tracking-wider shadow-md">
+                  <span className={`text-[11px] font-black px-3 py-1 rounded-lg uppercase tracking-wider shadow-md ${
+                    property.operation === 'VENTA'
+                      ? 'bg-black text-white'
+                      : property.operation === 'ALQUILER' || property.operation === 'ALQUILER TEMPORAL'
+                      ? 'bg-zinc-700 text-white'
+                      : 'bg-[#48A82D] text-white'
+                  }`}>
                     {property.operation}
                   </span>
                   {property.featured && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-md">
-                      <Sparkles className="w-3 h-3" />
-                      <span>Destacada</span>
+                    <span className="bg-amber-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                      <Home className="w-3.5 h-3.5 text-black shrink-0" />
+                      <span>Propiedad destacada</span>
                     </span>
                   )}
                 </div>
@@ -198,29 +225,59 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Thumbnail selector strip */}
+              {/* Thumbnail selector strip with navigation arrows */}
               {property.images.length > 1 && (
-                <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
-                  {property.images.map((img, idx) => (
+                <div className="relative flex items-center gap-1.5 mt-2">
+                  {property.images.length > 4 && (
                     <button
-                      key={idx}
-                      onClick={() => setActiveImageIndex(idx)}
-                      onDoubleClick={() => setZoomImage(img)}
-                      className={`relative w-20 h-16 sm:w-24 sm:h-18 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
-                        idx === activeImageIndex
-                          ? 'border-[#48A82D] scale-102 shadow-md ring-2 ring-[#48A82D]/20'
-                          : 'border-transparent opacity-60 hover:opacity-100'
-                      }`}
-                      title="Haz un clic para seleccionar, o doble clic para ampliar"
+                      type="button"
+                      onClick={() => scrollThumbnails('left')}
+                      className="p-2 rounded-xl bg-zinc-800 text-white hover:bg-black transition-colors shrink-0 cursor-pointer shadow-sm"
+                      title="Fotos anteriores"
                     >
-                      <img
-                        src={img}
-                        alt={`Foto ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
-                      />
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
-                  ))}
+                  )}
+
+                  <div
+                    ref={thumbnailRef}
+                    className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar scroll-smooth flex-1"
+                  >
+                    {property.images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImageIndex(idx)}
+                        onDoubleClick={() => setZoomImage(img)}
+                        className={`relative w-20 h-16 sm:w-24 sm:h-18 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                          idx === activeImageIndex
+                            ? 'border-[#48A82D] scale-102 shadow-md ring-2 ring-[#48A82D]/20'
+                            : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                        title={`Foto ${idx + 1}`}
+                      >
+                        <img
+                          src={img}
+                          alt={`Foto ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
+                        />
+                        <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1 rounded">
+                          {idx + 1}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {property.images.length > 4 && (
+                    <button
+                      type="button"
+                      onClick={() => scrollThumbnails('right')}
+                      className="p-2 rounded-xl bg-zinc-800 text-white hover:bg-black transition-colors shrink-0 cursor-pointer shadow-sm"
+                      title="Siguientes fotos"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -253,7 +310,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 {/* Price Display */}
                 <div className="bg-white p-3.5 rounded-xl border border-zinc-200 shadow-xs">
                   <span className="text-[9px] text-zinc-400 font-bold uppercase block tracking-wider">
-                    Precio de Lista
+                    Precio
                   </span>
                   <div className="flex items-baseline justify-between gap-2 mt-0.5">
                     <span className={`text-xl sm:text-2xl font-black ${displayPrice() === 'Consultar' ? 'text-[#48A82D]' : 'text-zinc-900'}`}>
@@ -317,25 +374,17 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* QUICK ACTION BUTTONS */}
+              {/* QUICK ACTION BUTTON */}
               <div className="space-y-1.5 pt-1 border-t border-zinc-200">
                 <a
-                  href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20Ref:%20${property.refCode}%20(${encodeURIComponent(property.title)})`}
+                  href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20${encodeURIComponent(property.title)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-[#48A82D] hover:bg-[#3C8F24] text-white py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                  className="w-full bg-[#48A82D] hover:bg-[#3C8F24] text-white py-3 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
                 >
                   <Phone className="w-4 h-4" />
                   <span>Consultar por WhatsApp</span>
                 </a>
-
-                <button
-                  onClick={() => setActiveTab('contact')}
-                  className="w-full bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-300 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <Calendar className="w-4 h-4 text-[#48A82D]" />
-                  <span>Agendar / Enviar Formulario</span>
-                </button>
               </div>
             </div>
           </div>
@@ -362,7 +411,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
             >
               <Video className="w-4 h-4 text-rose-500" />
               <span>Video Tour / IG</span>
-              {property.videoUrl && (
+              {(property.videoUrl || property.instagramUrl) && (
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
               )}
             </button>
@@ -385,16 +434,6 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               }`}
             >
               Ubicación
-            </button>
-            <button
-              onClick={() => setActiveTab('contact')}
-              className={`pb-3 text-sm font-bold transition-all border-b-2 cursor-pointer ${
-                activeTab === 'contact'
-                  ? 'border-[#48A82D] text-[#48A82D]'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
-              }`}
-            >
-              Agendar Visita
             </button>
           </div>
 
@@ -425,17 +464,46 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 )}
               </div>
 
-              {property.videoUrl ? (
-                <div className="relative rounded-2xl overflow-hidden bg-black aspect-16/9 shadow-lg border border-zinc-800">
-                  <video
-                    src={property.videoUrl}
-                    controls
-                    autoPlay
-                    loop
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              ) : (
+              {(() => {
+                const videoOrIgUrl = property.instagramUrl || property.videoUrl;
+                const igEmbedUrl = getInstagramEmbedUrl(videoOrIgUrl);
+
+                if (igEmbedUrl) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-2">
+                      <div className="relative w-full max-w-[380px] h-[580px] sm:h-[620px] rounded-2xl overflow-hidden bg-black shadow-2xl border border-zinc-800 flex items-center justify-center mx-auto">
+                        <iframe
+                          src={igEmbedUrl}
+                          className="w-full h-full border-0 rounded-2xl"
+                          scrolling="no"
+                          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                          allowFullScreen
+                          title="Instagram Reel / Video"
+                        />
+                      </div>
+                      <p className="text-[11px] text-zinc-400 mt-2 text-center">
+                        Visualización en formato vertical de Instagram. Si tenés problemas para reproducir, usá el botón "Ver Reel en Instagram".
+                      </p>
+                    </div>
+                  );
+                }
+
+                if (property.videoUrl) {
+                  return (
+                    <div className="relative rounded-2xl overflow-hidden bg-black aspect-16/9 shadow-lg border border-zinc-800">
+                      <video
+                        src={property.videoUrl}
+                        controls
+                        autoPlay
+                        loop
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  );
+                }
+
+                return null;
+              })() || (
                 <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-8 text-center space-y-3">
                   <Video className="w-10 h-10 text-zinc-400 mx-auto" />
                   <h4 className="font-bold text-zinc-800 text-sm">Video individual en edición</h4>
@@ -443,7 +511,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                     Podés solicitar el video completo del recorrido directo a nuestro WhatsApp o ver nuestros Reels actualizados en Instagram.
                   </p>
                   <a
-                    href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20solicitar%20el%20video%20de%20la%20propiedad%20Ref:%20${property.refCode}`}
+                    href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20solicitar%20el%20video%20de%20la%20propiedad%20${encodeURIComponent(property.title)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-[#48A82D] text-white rounded-xl text-xs font-bold"
@@ -456,29 +524,57 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
             </div>
           )}
           {activeTab === 'info' && (
-            <div className="space-y-4">
-              <h3 className="text-base font-bold text-zinc-900">Detalles de la propiedad</h3>
-              <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">
-                {property.description}
-              </p>
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-[#48A82D]/10 rounded-xl text-[#48A82D]">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-zinc-900">Descripción & Detalles</h3>
+                    <p className="text-xs text-zinc-500 font-medium">Información completa de la propiedad</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Description Box with stylish accent filete */}
+              <div className="bg-zinc-50/80 border-l-4 border-l-[#48A82D] border border-zinc-200/80 rounded-2xl p-5 sm:p-6 shadow-xs space-y-3">
+                {property.description.split('\n\n').map((paragraph, pIdx) => (
+                  <p key={pIdx} className="text-sm text-zinc-700 leading-relaxed font-normal">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
 
               {/* LOTE SPECIFIC FEATURES IF APPLICABLE */}
               {property.lotFeatures && (
-                <div className="mt-4 bg-[#48A82D]/10 border border-[#48A82D]/30 p-4 rounded-xl space-y-2 text-xs">
+                <div className="bg-[#48A82D]/10 border border-[#48A82D]/30 p-4.5 rounded-2xl space-y-2.5 text-xs">
                   <h4 className="font-bold text-zinc-900 flex items-center gap-1.5 text-sm">
                     <Trees className="w-4 h-4 text-[#48A82D]" />
                     <span>Datos Técnicos del Lote</span>
                   </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-zinc-800 font-medium">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-zinc-800 font-medium">
                     {property.lotFeatures.frontageMeters && (
-                      <div>Frente: <strong>{property.lotFeatures.frontageMeters} metros</strong></div>
+                      <div className="bg-white/90 p-2.5 rounded-xl border border-[#48A82D]/20 shadow-2xs">
+                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">Frente</span>
+                        <strong className="text-xs text-zinc-900">{property.lotFeatures.frontageMeters} metros</strong>
+                      </div>
                     )}
                     {property.lotFeatures.depthMeters && (
-                      <div>Fondo: <strong>{property.lotFeatures.depthMeters} metros</strong></div>
+                      <div className="bg-white/90 p-2.5 rounded-xl border border-[#48A82D]/20 shadow-2xs">
+                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">Fondo</span>
+                        <strong className="text-xs text-zinc-900">{property.lotFeatures.depthMeters} metros</strong>
+                      </div>
                     )}
-                    <div>Salida al Agua: <strong>{property.lotFeatures.waterAccess ? 'Sí (Directa)' : 'No'}</strong></div>
+                    <div className="bg-white/90 p-2.5 rounded-xl border border-[#48A82D]/20 shadow-2xs">
+                      <span className="text-[10px] text-zinc-400 font-bold uppercase block">Salida al Agua</span>
+                      <strong className="text-xs text-zinc-900">{property.lotFeatures.waterAccess ? 'Sí (Directa)' : 'No'}</strong>
+                    </div>
                     {property.lotFeatures.fosiFos && (
-                      <div>Factibilidad: <strong>{property.lotFeatures.fosiFos}</strong></div>
+                      <div className="bg-white/90 p-2.5 rounded-xl border border-[#48A82D]/20 shadow-2xs">
+                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">Factibilidad FOS/FOT</span>
+                        <strong className="text-xs text-zinc-900">{property.lotFeatures.fosiFos}</strong>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -504,106 +600,62 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
           )}
 
           {activeTab === 'location' && (
-            <div className="space-y-4">
-              <h3 className="text-base font-bold text-zinc-900">Ubicación aproximada</h3>
-              <div className="bg-zinc-100 rounded-2xl h-64 relative overflow-hidden flex items-center justify-center border border-zinc-200">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80')] bg-cover bg-center opacity-60"></div>
-                <div className="relative bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-lg text-center max-w-sm border border-zinc-200">
-                  <MapPin className="w-8 h-8 text-[#48A82D] mx-auto mb-1 animate-bounce" />
-                  <p className="text-xs font-bold text-zinc-900">{property.location.address}</p>
-                  <p className="text-[11px] text-zinc-600">{property.location.zone}, {property.location.city}</p>
-                  <span className="inline-block mt-2 text-[10px] bg-[#48A82D] text-white font-bold px-2.5 py-1 rounded">
-                    Ubicación Confirmada
-                  </span>
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 flex items-center gap-1.5">
+                    <MapPin className="w-5 h-5 text-[#48A82D]" />
+                    <span>Ubicación de la Propiedad</span>
+                  </h3>
+                  <p className="text-xs text-zinc-600 font-medium">
+                    {property.location.address}, {property.location.zone}, {property.location.city}
+                  </p>
                 </div>
+                <a
+                  href={externalGoogleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#181818] hover:bg-black text-white text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-xs"
+                >
+                  <span>Abrir en Google Maps</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-[#48A82D]" />
+                </a>
               </div>
-            </div>
-          )}
 
-          {activeTab === 'contact' && (
-            <div className="space-y-4">
-              <h3 className="text-base font-bold text-zinc-900">Coordinar una visita o hacer una consulta</h3>
-              {contactSubmitted ? (
-                <div className="p-4 bg-[#48A82D]/10 border border-[#48A82D] text-zinc-800 rounded-xl text-sm font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-[#48A82D]" />
-                  <span>¡Mensaje enviado con éxito! Un asesor de MARIA EUGENIA FERNÁNDEZ Inmobiliaria te responderá a la brevedad.</span>
-                </div>
-              ) : (
-                <form onSubmit={handleFormSubmit} className="space-y-3 bg-zinc-50 p-4 rounded-2xl border border-zinc-200">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-zinc-600 mb-1 block">Tu Nombre y Apellido</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej: Juan Pérez"
-                        value={visitorName}
-                        onChange={(e) => setVisitorName(e.target.value)}
-                        className="w-full bg-white border border-zinc-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#48A82D]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-zinc-600 mb-1 block">Teléfono / WhatsApp</label>
-                      <input
-                        type="tel"
-                        required
-                        placeholder="Ej: 11 5521 8899"
-                        value={visitorPhone}
-                        onChange={(e) => setVisitorPhone(e.target.value)}
-                        className="w-full bg-white border border-zinc-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#48A82D]"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-zinc-600 mb-1 block">Mensaje</label>
-                    <textarea
-                      rows={3}
-                      value={visitorMessage}
-                      onChange={(e) => setVisitorMessage(e.target.value)}
-                      className="w-full bg-white border border-zinc-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#48A82D]"
-                    />
-                  </div>
+              <div className="relative w-full h-[340px] sm:h-[420px] rounded-2xl overflow-hidden shadow-md border border-zinc-300 bg-zinc-100 group">
+                <iframe
+                  key={mapZoom}
+                  title={`Mapa ${property.title}`}
+                  src={mapEmbedUrl}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  allowFullScreen
+                />
+                {/* Overlay Map Zoom Controls */}
+                <div className="absolute bottom-4 right-4 flex flex-col bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-zinc-300 p-1 gap-1 z-10">
                   <button
-                    type="submit"
-                    className="w-full bg-[#48A82D] hover:bg-[#3C8F24] text-white py-3 rounded-xl font-bold text-sm transition-all cursor-pointer shadow-md"
+                    type="button"
+                    onClick={() => setMapZoom((prev) => Math.min(prev + 1, 19))}
+                    disabled={mapZoom >= 19}
+                    className="p-2 hover:bg-zinc-100 disabled:opacity-40 text-zinc-800 transition-colors cursor-pointer rounded-lg"
+                    title="Acercar mapa (+)"
                   >
-                    Enviar Consulta Directa
+                    <Plus className="w-4 h-4 text-[#48A82D]" />
                   </button>
-                </form>
-              )}
-            </div>
-          )}
-
-          {/* AGENT CARD FOOTER */}
-          <div className="bg-zinc-50 p-5 rounded-2xl border border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <img
-                src={property.agent.avatar}
-                alt={property.agent.name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-[#48A82D]"
-                onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80'; }}
-              />
-              <div>
-                <span className="text-[10px] text-[#48A82D] font-bold uppercase block tracking-wider">
-                  Asesor Comercial Asignado
-                </span>
-                <h4 className="text-sm font-bold text-zinc-900">{property.agent.name}</h4>
-                <p className="text-xs text-zinc-500">{property.agent.email}</p>
+                  <div className="h-px bg-zinc-200 w-full" />
+                  <button
+                    type="button"
+                    onClick={() => setMapZoom((prev) => Math.max(prev - 1, 10))}
+                    disabled={mapZoom <= 10}
+                    className="p-2 hover:bg-zinc-100 disabled:opacity-40 text-zinc-800 transition-colors cursor-pointer rounded-lg"
+                    title="Alejar mapa (-)"
+                  >
+                    <Minus className="w-4 h-4 text-zinc-600" />
+                  </button>
+                </div>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <a
-                href={`https://wa.me/5491155218899?text=${encodeURIComponent(visitorMessage)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 sm:flex-none px-4 py-2.5 bg-[#48A82D] hover:bg-[#3C8F24] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
-              >
-                <Phone className="w-4 h-4" />
-                <span>WhatsApp Asesor</span>
-              </a>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -615,7 +667,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
         >
           <div className="w-full flex items-center justify-between text-white max-w-6xl">
             <div className="text-xs font-bold text-zinc-300">
-              Ref: <span className="text-[#48A82D]">{property.refCode}</span> — {property.title}
+              <span className="text-[#48A82D]">{property.title}</span> — {property.location.zone}
             </div>
             <button
               onClick={() => setZoomImage(null)}
@@ -627,13 +679,19 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
           </div>
 
           <div className="relative max-w-6xl max-h-[85vh] flex items-center justify-center overflow-hidden my-auto p-2">
-            <img
-              src={zoomImage}
-              alt="Foto ampliada"
-              className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
-              onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
-              onClick={(e) => e.stopPropagation()}
-            />
+            <div className="relative inline-flex items-center justify-center max-w-full max-h-[82vh]">
+              <img
+                src={zoomImage}
+                alt="Foto ampliada"
+                className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
+                onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              {/* Subtle Logo Watermark Overlay for Zoom */}
+              <div className="absolute bottom-6 right-6 pointer-events-none opacity-[0.4] z-10 w-24 h-24">
+                <img src="/logo-white.png" alt="" className="w-full h-full object-contain drop-shadow-lg" />
+              </div>
+            </div>
             {property.images.length > 1 && (
               <>
                 <button

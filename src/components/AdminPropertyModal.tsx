@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { LocationPickerMap } from './LocationPickerMap';
 import {
   X,
   Building2,
@@ -25,7 +26,7 @@ import {
 } from 'lucide-react';
 import { Property, OperationType, PropertyType } from '../types';
 import { ZONES_LIST } from '../data/properties';
-import { addPropertyToFirestore, updatePropertyInFirestore } from '../services/propertyService';
+import { addPropertyToFirestore, updatePropertyInFirestore, saveCustomLocalProperty } from '../services/propertyService';
 
 interface AdminPropertyModalProps {
   isOpen: boolean;
@@ -34,7 +35,9 @@ interface AdminPropertyModalProps {
   onSavedSuccess?: (savedProperty?: Property) => void;
 }
 
-const COMMON_AMENITIES = [
+const ALL_AMENITIES_STORAGE_KEY = 'mef_all_amenities';
+
+const DEFAULT_AMENITIES = [
   'Parrilla',
   'Cochera',
   'Pileta',
@@ -54,6 +57,30 @@ const COMMON_AMENITIES = [
   'Lavadero',
   'Seguridad 24hs',
 ];
+
+const getStoredAmenities = (): string[] => {
+  try {
+    const raw = localStorage.getItem(ALL_AMENITIES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+      }
+    }
+  } catch (e) {
+    console.warn('Error loading amenities:', e);
+  }
+  return [...DEFAULT_AMENITIES].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+};
+
+const saveStoredAmenities = (amenities: string[]) => {
+  try {
+    const sorted = Array.from(new Set(amenities)).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    localStorage.setItem(ALL_AMENITIES_STORAGE_KEY, JSON.stringify(sorted));
+  } catch (e) {
+    console.warn('Error saving amenities:', e);
+  }
+};
 
 export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
   isOpen,
@@ -90,7 +117,6 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
   // Media URLs & Photo management
   const [imageUrlsText, setImageUrlsText] = useState('');
   const [mainImageIndex, setMainImageIndex] = useState<number>(0);
-  const [newImageUrl, setNewImageUrl] = useState<string>('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoType, setVideoType] = useState<'mp4' | 'youtube' | 'instagram'>('mp4');
   const [instagramUrl, setInstagramUrl] = useState('');
@@ -99,12 +125,49 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
   const [featured, setFeatured] = useState(false);
   const [isNewDevelopment, setIsNewDevelopment] = useState(false);
   const [isRecentlyUploaded, setIsRecentlyUploaded] = useState(true);
+  const [displayOrder, setDisplayOrder] = useState<number | ''>('');
+  const [allAmenities, setAllAmenities] = useState<string[]>(getStoredAmenities());
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
     'Parrilla',
     'Gas Natural',
     'Agua Corriente',
   ]);
   const [customAmenity, setCustomAmenity] = useState('');
+  const [amenitySearchQuery, setAmenitySearchQuery] = useState('');
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+  const handleGenerateAiDescription = async () => {
+    try {
+      setIsGeneratingAi(true);
+      const res = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          type,
+          operation,
+          zone,
+          priceARS: priceARS === '' ? undefined : priceARS,
+          priceUSD: priceUSD === '' ? undefined : priceUSD,
+          coveredArea: coveredArea === '' ? undefined : coveredArea,
+          bedrooms: bedrooms === '' ? undefined : bedrooms,
+          bathrooms: bathrooms === '' ? undefined : bathrooms,
+          amenities: selectedAmenities,
+        }),
+      });
+      const data = await res.json();
+      if (data.description) {
+        setDescription(data.description);
+      } else {
+        alert(data.error || 'No se pudo generar la descripción con IA.');
+      }
+    } catch (e) {
+      console.error('AI generation error:', e);
+      alert('Error al conectar con el servicio de IA.');
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   // Form submission state
   const [loading, setLoading] = useState(false);
@@ -113,6 +176,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
 
   // Load property to edit if supplied
   useEffect(() => {
+    const stored = getStoredAmenities();
     if (propertyToEdit) {
       setRefCode(propertyToEdit.refCode || '');
       setTitle(propertyToEdit.title || '');
@@ -145,7 +209,14 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       setFeatured(Boolean(propertyToEdit.featured));
       setIsNewDevelopment(Boolean(propertyToEdit.isNewDevelopment));
       setIsRecentlyUploaded(Boolean(propertyToEdit.isRecentlyUploaded));
-      setSelectedAmenities(propertyToEdit.amenities || []);
+      setDisplayOrder(propertyToEdit.displayOrder !== undefined ? propertyToEdit.displayOrder : '');
+
+      const propAmenities = propertyToEdit.amenities || [];
+      const mergedList = Array.from(new Set([...stored, ...propAmenities])).sort((a, b) =>
+        a.localeCompare(b, 'es', { sensitivity: 'base' })
+      );
+      setAllAmenities(mergedList);
+      setSelectedAmenities(propAmenities);
     } else {
       // Reset form defaults for brand new property
       const randomRef = `MEF-${Math.floor(100 + Math.random() * 900)}`;
@@ -157,7 +228,10 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       setMainImageIndex(0);
       setVideoUrl('');
       setInstagramUrl('');
+      setAllAmenities(stored);
+      setSelectedAmenities(['Parrilla', 'Gas Natural', 'Agua Corriente']);
     }
+    setAmenitySearchQuery('');
   }, [propertyToEdit, isOpen]);
 
   if (!isOpen) return null;
@@ -170,27 +244,39 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
     }
   };
 
-  const handleAddCustomAmenity = () => {
-    if (customAmenity.trim() && !selectedAmenities.includes(customAmenity.trim())) {
-      setSelectedAmenities([...selectedAmenities, customAmenity.trim()]);
+  const handleAddCustomAmenity = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = customAmenity.trim();
+    if (trimmed) {
+      const updated = Array.from(new Set([...allAmenities, trimmed])).sort((a, b) =>
+        a.localeCompare(b, 'es', { sensitivity: 'base' })
+      );
+      setAllAmenities(updated);
+      saveStoredAmenities(updated);
+      if (!selectedAmenities.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
+        setSelectedAmenities([...selectedAmenities, trimmed]);
+      }
       setCustomAmenity('');
     }
   };
+
+  const handleRemoveAmenityFromList = (e: React.MouseEvent, amenityToRemove: string) => {
+    e.stopPropagation();
+    const updated = allAmenities.filter((a) => a !== amenityToRemove);
+    setAllAmenities(updated);
+    saveStoredAmenities(updated);
+    setSelectedAmenities((prev) => prev.filter((a) => a !== amenityToRemove));
+  };
+
+  const filteredAmenities = allAmenities.filter((amenity) =>
+    amenity.toLowerCase().includes(amenitySearchQuery.toLowerCase())
+  );
 
   // Helper to parse image URLs from textarea
   const parsedImageUrls = imageUrlsText
     .split(/\r?\n/)
     .map((url) => url.trim())
     .filter((url) => url.length > 5 && (url.startsWith('http://') || url.startsWith('https://')));
-
-  const handleAddSingleUrl = () => {
-    const trimmed = newImageUrl.trim();
-    if (trimmed && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))) {
-      const updatedText = imageUrlsText.trim() ? `${imageUrlsText.trim()}\n${trimmed}` : trimmed;
-      setImageUrlsText(updatedText);
-      setNewImageUrl('');
-    }
-  };
 
   const handleRemoveImageByIndex = (idxToRemove: number) => {
     const remaining = parsedImageUrls.filter((_, i) => i !== idxToRemove);
@@ -249,6 +335,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       featured,
       isNewDevelopment,
       isRecentlyUploaded,
+      displayOrder: displayOrder !== '' ? Number(displayOrder) : undefined,
       videoUrl: videoUrl.trim(),
       videoType,
       instagramUrl: instagramUrl.trim(),
@@ -259,7 +346,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
         email: 'contacto@mefnegociosinmobiliarios.ar',
         avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
       },
-      createdAt: propertyToEdit?.createdAt || new Date().toISOString().split('T')[0],
+      createdAt: propertyToEdit?.createdAt || new Date().toISOString(),
     };
 
     let targetId = propertyToEdit?.id;
@@ -296,6 +383,8 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
         id: targetId || `mef-${Date.now()}`,
         ...propertyPayload,
       };
+
+      saveCustomLocalProperty(savedFullProperty);
 
       setTimeout(() => {
         if (onSavedSuccess) onSavedSuccess(savedFullProperty);
@@ -360,20 +449,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
               <span>1. Clasificación y Título Principal</span>
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-[11px] font-bold text-zinc-600 uppercase mb-1">
-                  Código REF (COD.REF)
-                </label>
-                <input
-                  type="text"
-                  value={refCode}
-                  onChange={(e) => setRefCode(e.target.value)}
-                  placeholder="Ej: MEF-GLM10"
-                  className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
-                />
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-zinc-600 uppercase mb-1">
                   Operación *
@@ -552,6 +628,18 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Interactive Location Picker Map */}
+            <LocationPickerMap
+              lat={lat}
+              lng={lng}
+              address={address}
+              city={city}
+              onChange={(newLat, newLng) => {
+                setLat(newLat);
+                setLng(newLng);
+              }}
+            />
           </div>
 
           {/* SECTION 3: METRICS AND AMBIENTES */}
@@ -646,38 +734,13 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
               </span>
             </div>
 
-            {/* Quick Add Single Photo URL Input */}
-            <div className="bg-white border border-zinc-200 p-3 rounded-xl flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                placeholder="Pegar enlace / URL de foto individual (ej: https://...)"
-                value={newImageUrl}
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddSingleUrl();
-                  }
-                }}
-                className="flex-1 bg-zinc-50 border border-zinc-300 rounded-lg px-3 py-2 text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
-              />
-              <button
-                type="button"
-                onClick={handleAddSingleUrl}
-                className="bg-[#48A82D] hover:bg-[#3C8F24] text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Agregar Foto</span>
-              </button>
-            </div>
-
             {/* Bulk URLs Textarea */}
             <div>
               <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
-                O Pegar Múltiples URLs de Fotos (Una URL por línea) *
+                Pegar URLs de Fotografías (Una URL por línea) *
               </label>
               <textarea
-                rows={3}
+                rows={4}
                 value={imageUrlsText}
                 onChange={(e) => setImageUrlsText(e.target.value)}
                 placeholder={`https://images.unsplash.com/photo-1600596542815-ffad4c1539a9...\nhttps://images.unsplash.com/photo-1600585154340...`}
@@ -686,7 +749,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
               <p className="text-[11px] text-zinc-500 mt-1 flex items-center gap-1">
                 <HelpCircle className="w-3.5 h-3.5 text-[#48A82D]" />
                 <span>
-                  Haga clic en <strong>"⭐ Foto Principal"</strong> en la foto que desea mostrar en la portada principal de la propiedad.
+                  Haga clic en <strong>"⭐ Elegir como Principal"</strong> en la foto que desea mostrar en la portada principal de la propiedad.
                 </span>
               </p>
             </div>
@@ -802,10 +865,22 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
 
           {/* SECTION 5: DESCRIPTION */}
           <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 sm:p-5 space-y-2">
-            <h4 className="text-xs font-bold text-zinc-800 uppercase tracking-wider border-b border-zinc-200 pb-2 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#48A82D]" />
-              <span>5. Descripción Detallada</span>
-            </h4>
+            <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
+              <h4 className="text-xs font-bold text-zinc-800 uppercase tracking-wider flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#48A82D]" />
+                <span>5. Descripción Detallada</span>
+              </h4>
+              <button
+                type="button"
+                onClick={handleGenerateAiDescription}
+                disabled={isGeneratingAi}
+                className="px-3 py-1.5 bg-[#181818] hover:bg-[#282828] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                title="Generar descripción comercial profesional con IA"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#48A82D]" />
+                <span>{isGeneratingAi ? 'Generando IA...' : '✨ Sugerir con IA'}</span>
+              </button>
+            </div>
             <textarea
               rows={4}
               value={description}
@@ -855,47 +930,99 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
               </label>
             </div>
 
+            {/* CUSTOM DISPLAY ORDER / PRIORITY POSITION */}
+            <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 space-y-1.5">
+              <label className="text-xs font-black text-emerald-900 uppercase tracking-wider block">
+                📌 Orden de Posición Personalizado (Opcional)
+              </label>
+              <p className="text-[11px] text-emerald-700 leading-tight">
+                Las propiedades con un número menor aparecerán primero en el catálogo (Ej: 1 = Primera posición). Si lo deja en blanco, se ordenará automáticamente por fecha de carga.
+              </p>
+              <input
+                type="number"
+                value={displayOrder}
+                onChange={(e) => setDisplayOrder(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="Ej: 1 (Número de orden preferido)"
+                className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
+              />
+            </div>
+
             {/* AMENITIES CHECKBOXES */}
             <div>
-              <label className="block text-[11px] font-bold text-zinc-600 uppercase mb-2">
-                Servicios y Características
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {COMMON_AMENITIES.map((amenity) => {
-                  const isChecked = selectedAmenities.includes(amenity);
-                  return (
-                    <button
-                      key={amenity}
-                      type="button"
-                      onClick={() => toggleAmenity(amenity)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        isChecked
-                          ? 'bg-[#181818] text-white border-2 border-[#48A82D] shadow-xs'
-                          : 'bg-white text-zinc-700 border border-zinc-300 hover:bg-zinc-200'
-                      }`}
-                    >
-                      <CheckCircle2 className={`w-3.5 h-3.5 ${isChecked ? 'text-[#48A82D]' : 'text-zinc-400'}`} />
-                      <span>{amenity}</span>
-                    </button>
-                  );
-                })}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <label className="block text-[11px] font-bold text-zinc-600 uppercase">
+                  Servicios y Características (haga clic para activar/desactivar, o la cruz ✕ para eliminar de la lista)
+                </label>
+                <div className="w-full sm:w-64">
+                  <input
+                    type="text"
+                    placeholder="🔍 Buscar servicio..."
+                    value={amenitySearchQuery}
+                    onChange={(e) => setAmenitySearchQuery(e.target.value)}
+                    className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto p-1 bg-white border border-zinc-200 rounded-xl">
+                {filteredAmenities.length === 0 ? (
+                  <p className="text-xs text-zinc-400 p-2 italic">No se encontraron servicios o características con ese nombre.</p>
+                ) : (
+                  filteredAmenities.map((amenity) => {
+                    const isChecked = selectedAmenities.includes(amenity);
+                    return (
+                      <div
+                        key={amenity}
+                        className={`group relative px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          isChecked
+                            ? 'bg-[#181818] text-white border-2 border-[#48A82D] shadow-xs'
+                            : 'bg-white text-zinc-700 border border-zinc-300 hover:bg-zinc-100'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleAmenity(amenity)}
+                          className="flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <CheckCircle2 className={`w-3.5 h-3.5 ${isChecked ? 'text-[#48A82D]' : 'text-zinc-400'}`} />
+                          <span>{amenity}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleRemoveAmenityFromList(e, amenity)}
+                          className="ml-1 text-zinc-400 hover:text-red-500 hover:bg-red-100 p-0.5 rounded transition-colors cursor-pointer"
+                          title="Eliminar esta característica de la lista"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
               {/* CUSTOM AMENITY INPUT */}
-              <div className="mt-3 flex gap-2 max-w-xs">
+              <div className="mt-3 flex gap-2 max-w-sm">
                 <input
                   type="text"
-                  placeholder="Agregar otra característica..."
+                  placeholder="Escriba otra característica (ej: Calefacción Central)..."
                   value={customAmenity}
                   onChange={(e) => setCustomAmenity(e.target.value)}
-                  className="flex-1 bg-white border border-zinc-300 rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-800"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomAmenity(e);
+                    }
+                  }}
+                  className="flex-1 bg-white border border-zinc-300 rounded-lg px-3 py-2 text-xs font-medium text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
                 />
                 <button
                   type="button"
                   onClick={handleAddCustomAmenity}
-                  className="bg-zinc-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-zinc-900 cursor-pointer"
+                  className="bg-zinc-800 hover:bg-zinc-900 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1"
                 >
-                  Agregar
+                  <Plus className="w-3.5 h-3.5 text-[#48A82D]" />
+                  <span>Agregar</span>
                 </button>
               </div>
             </div>

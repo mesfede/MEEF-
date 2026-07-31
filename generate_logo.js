@@ -1,4 +1,4 @@
-import { createCanvas } from '@napi-rs/canvas';
+import { loadImage, createCanvas } from '@napi-rs/canvas';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,70 +6,88 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function createLogoPNG({ width = 1200, height = 240, isDark = false, transparent = true }) {
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
-
-  if (!transparent) {
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, width, height);
+async function processOriginalLogo() {
+  const publicDir = path.join(__dirname, 'public');
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
   }
 
-  const textColor = isDark ? '#FFFFFF' : '#1C1B1B';
-  const gridDarkColor = isDark ? '#FFFFFF' : '#1C1B1B';
-  const greenColor = '#48A82D';
+  const srcPath = path.join(__dirname, 'src', 'MEF_logo_svg.png');
+  if (!fs.existsSync(srcPath)) {
+    console.error('src/MEF_logo_svg.png not found!');
+    return;
+  }
 
-  // 1. Draw 3x3 Grid Symbol
-  const startX = 15;
-  const startY = 15;
-  const sqSize = 58;
-  const gap = 9;
+  const img = await loadImage(srcPath);
+  const tempCanvas = createCanvas(img.width, img.height);
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(img, 0, 0);
+  const imgData = tempCtx.getImageData(0, 0, img.width, img.height).data;
 
-  for (let row = 0; row < 3; row++) {
-    for (let col = 0; col < 3; col++) {
-      const x = startX + col * (sqSize + gap);
-      const y = startY + row * (sqSize + gap);
-      
-      if (row === 1 && col === 1) {
-        ctx.fillStyle = greenColor;
-      } else {
-        ctx.fillStyle = gridDarkColor;
+  // Detect bounding box of non-transparent content
+  let minX = img.width, maxX = 0, minY = img.height, maxY = 0;
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      const idx = (y * img.width + x) * 4;
+      const alpha = imgData[idx + 3];
+      if (alpha > 15) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
       }
-      ctx.fillRect(x, y, sqSize, sqSize);
     }
   }
 
-  // 2. Draw Typography - Exactly 2 Lines
-  const textX = startX + 3 * sqSize + 2 * gap + 35;
+  const cropWidth = maxX - minX + 1;
+  const cropHeight = maxY - minY + 1;
+  const padding = 15;
 
-  // Line 1: MARIA EUGENIA FERNÁNDEZ
-  ctx.fillStyle = textColor;
-  ctx.font = '900 72px Arial, sans-serif';
-  ctx.textBaseline = 'top';
-  ctx.fillText('MARIA EUGENIA FERNÁNDEZ', textX, 22);
+  // Dark/Original trim canvas
+  const darkCanvas = createCanvas(cropWidth + padding * 2, cropHeight + padding * 2);
+  const darkCtx = darkCanvas.getContext('2d');
+  darkCtx.drawImage(img, minX, minY, cropWidth, cropHeight, padding, padding, cropWidth, cropHeight);
 
-  // Line 2: NEGOCIOS INMOBILIARIOS
-  ctx.font = 'bold 36px Arial, sans-serif';
-  const subText = 'N E G O C I O S   I N M O B I L I A R I O S';
-  ctx.fillText(subText, textX, 118);
+  // Light/White text canvas for dark backgrounds
+  const whiteCanvas = createCanvas(cropWidth + padding * 2, cropHeight + padding * 2);
+  const whiteCtx = whiteCanvas.getContext('2d');
+  whiteCtx.drawImage(darkCanvas, 0, 0);
+  const wData = whiteCtx.getImageData(0, 0, whiteCanvas.width, whiteCanvas.height);
+  const pixels = wData.data;
 
-  return canvas.toBuffer('image/png');
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i];
+    const g = pixels[i + 1];
+    const b = pixels[i + 2];
+    const a = pixels[i + 3];
+
+    if (a > 15) {
+      const isGreen = (g > r + 30) && (g > b + 30);
+      if (!isGreen) {
+        pixels[i] = 255;
+        pixels[i + 1] = 255;
+        pixels[i + 2] = 255;
+      }
+    }
+  }
+  whiteCtx.putImageData(wData, 0, 0);
+
+  const darkBuffer = darkCanvas.toBuffer('image/png');
+  const whiteBuffer = whiteCanvas.toBuffer('image/png');
+
+  fs.writeFileSync(path.join(publicDir, 'mef-logo.png'), darkBuffer);
+  fs.writeFileSync(path.join(publicDir, 'logo.png'), darkBuffer);
+  fs.writeFileSync(path.join(publicDir, 'mef-logo-original.png'), darkBuffer);
+  fs.writeFileSync(path.join(publicDir, 'logo-original.png'), darkBuffer);
+  fs.writeFileSync(path.join(publicDir, 'user_logo_trimmed.png'), darkBuffer);
+  fs.writeFileSync(path.join(publicDir, 'MEF_logo_svg.png'), darkBuffer);
+
+  fs.writeFileSync(path.join(publicDir, 'mef-logo-white.png'), whiteBuffer);
+  fs.writeFileSync(path.join(publicDir, 'logo-white.png'), whiteBuffer);
+
+  console.log('Processed original user logo cleanly into /public !');
 }
 
-const publicDir = path.join(__dirname, 'public');
-if (!fs.existsSync(publicDir)) {
-  fs.mkdirSync(publicDir, { recursive: true });
-}
+processOriginalLogo();
 
-// Write dark text version (for light backgrounds)
-fs.writeFileSync(path.join(publicDir, 'mef-logo.png'), createLogoPNG({ isDark: false, transparent: true }));
-fs.writeFileSync(path.join(publicDir, 'logo.png'), createLogoPNG({ isDark: false, transparent: true }));
 
-// Write white text version (for dark backgrounds)
-fs.writeFileSync(path.join(publicDir, 'mef-logo-white.png'), createLogoPNG({ isDark: true, transparent: true }));
-fs.writeFileSync(path.join(publicDir, 'logo-white.png'), createLogoPNG({ isDark: true, transparent: true }));
-
-// Write white background version
-fs.writeFileSync(path.join(publicDir, 'logo-original.png'), createLogoPNG({ isDark: false, transparent: false }));
-
-console.log('PNG logos created successfully in /public !');

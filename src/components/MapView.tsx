@@ -36,8 +36,7 @@ export const MapView: React.FC<MapViewProps> = ({
     : properties.filter((p) =>
         p.title.toLowerCase().includes(mapSearchQuery.toLowerCase()) ||
         p.location.zone.toLowerCase().includes(mapSearchQuery.toLowerCase()) ||
-        p.location.address.toLowerCase().includes(mapSearchQuery.toLowerCase()) ||
-        p.refCode.toLowerCase().includes(mapSearchQuery.toLowerCase())
+        p.location.address.toLowerCase().includes(mapSearchQuery.toLowerCase())
       );
 
   const activeProp = selectedMapProperty || properties[0];
@@ -69,7 +68,7 @@ export const MapView: React.FC<MapViewProps> = ({
             <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Buscar ubicación o COD.REF..."
+              placeholder="Buscar por ubicación, zona o título..."
               value={mapSearchQuery}
               onChange={(e) => setMapSearchQuery(e.target.value)}
               className="w-full bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-400 text-xs rounded-xl pl-9 pr-3 py-2 focus:outline-none focus:border-[#48A82D]"
@@ -135,7 +134,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   <div className="flex flex-col text-left min-w-0">
                     <div className="flex items-center gap-1">
                       <span className="text-[9px] font-black uppercase text-[#48A82D] tracking-wider truncate">
-                        {p.refCode}
+                        {p.location.zone}
                       </span>
                     </div>
                     <span className="text-xs font-bold truncate leading-snug">
@@ -169,11 +168,17 @@ export const MapView: React.FC<MapViewProps> = ({
             />
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-black bg-[#181818] text-[#48A82D] px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  Ref: {activeProp.refCode}
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                  activeProp.operation === 'VENTA'
+                    ? 'bg-black text-white'
+                    : activeProp.operation === 'ALQUILER' || activeProp.operation === 'ALQUILER TEMPORAL'
+                    ? 'bg-zinc-500 text-white'
+                    : 'bg-[#48A82D] text-white'
+                }`}>
+                  {activeProp.operation}
                 </span>
                 <span className="text-[10px] font-bold text-zinc-500 uppercase">
-                  {activeProp.operation} • {activeProp.type}
+                  {activeProp.type}
                 </span>
               </div>
               <h4 className="text-xs font-bold text-zinc-900 truncate mt-1">
@@ -243,7 +248,7 @@ export const MapView: React.FC<MapViewProps> = ({
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-[#48A82D] uppercase">{p.operation}</span>
-                  <span className="text-[9px] text-zinc-400 font-medium">{p.refCode}</span>
+                  <span className="text-[9px] text-zinc-400 font-medium">{p.location.zone}</span>
                 </div>
                 <h5 className="text-xs font-bold truncate mt-0.5">{p.title}</h5>
                 <p className="text-[11px] font-bold text-[#48A82D] mt-0.5">{displayPrice(p)}</p>

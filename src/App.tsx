@@ -1,8 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { Property, SearchFilters, OperationType, PropertyType } from './types';
-import { PROPERTIES_DATA } from './data/properties';
-import { subscribeToProperties, deletePropertyFromFirestore } from './services/propertyService';
+import {
+  subscribeToProperties,
+  deletePropertyFromFirestore,
+  updatePropertyInFirestore,
+  updatePropertiesOrder,
+  exportPropertiesBackupJSON,
+  importPropertiesBackupJSON,
+} from './services/propertyService';
 import { Header } from './components/Header';
 import { HeroSearch } from './components/HeroSearch';
 import { PropertyCard } from './components/PropertyCard';
@@ -20,9 +26,59 @@ import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
 
 export default function App() {
+  // Hero Video Ref & Autoplay Guarantee
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (video) {
+      video.defaultMuted = true;
+      video.muted = true;
+      const playVideo = () => {
+        video.play().catch(() => {});
+      };
+      playVideo();
+
+      // Seamless video loop handler: resets 150ms before end to avoid HTML5 video loop micro-stutters
+      const handleTimeUpdate = () => {
+        if (video.duration > 0 && video.currentTime >= video.duration - 0.15) {
+          video.currentTime = 0.01;
+          video.play().catch(() => {});
+        }
+      };
+
+      video.addEventListener('timeupdate', handleTimeUpdate);
+
+      const handleUserInteraction = () => {
+        if (video.paused) {
+          playVideo();
+        }
+      };
+
+      window.addEventListener('touchstart', handleUserInteraction, { passive: true, once: true });
+      window.addEventListener('click', handleUserInteraction, { passive: true, once: true });
+
+      return () => {
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+        window.removeEventListener('touchstart', handleUserInteraction);
+        window.removeEventListener('click', handleUserInteraction);
+      };
+    }
+  }, []);
+
   // Global Realtime Properties State from Firebase
-  const [properties, setProperties] = useState<Property[]>(PROPERTIES_DATA);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Admin Auth & Modal States
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
@@ -106,15 +162,25 @@ export default function App() {
 
   const handlePropertySaved = (savedProp?: Property) => {
     if (savedProp) {
+      // 1. Reset filters to ensure the newly saved property is not hidden by active filters
+      setFilters((prev) => ({
+        ...prev,
+        operation: 'TODAS',
+        propertyType: 'TODOS',
+        zone: 'Todas las zonas',
+        refCodeSearch: '',
+      }));
+
+      // 2. Add or update property at the top of state
       setProperties((prev) => {
-        const index = prev.findIndex((p) => p.id === savedProp.id);
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = savedProp;
-          return updated;
-        }
-        return [savedProp, ...prev];
+        const filtered = prev.filter((p) => p.id !== savedProp.id && p.refCode !== savedProp.refCode);
+        return [savedProp, ...filtered];
       });
+
+      // 3. Scroll to catalog so user sees the newly saved property immediately
+      setTimeout(() => {
+        scrollToSection('catalogo');
+      }, 100);
     }
   };
 
@@ -128,7 +194,7 @@ export default function App() {
     }
   };
 
-  // Search Filters State
+  // Search Filters State & Pagination State
   const defaultFilters: SearchFilters = {
     operation: 'TODAS',
     propertyType: 'TODOS',
@@ -148,6 +214,50 @@ export default function App() {
   };
 
   const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
+  const ITEMS_PER_PAGE = 9;
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  // Reordering functions for Admin
+  const handleMovePropertyUp = async (id: string) => {
+    const idx = properties.findIndex((p) => p.id === id);
+    if (idx <= 0) return;
+    
+    const newArr = [...properties];
+    const temp = newArr[idx];
+    newArr[idx] = newArr[idx - 1];
+    newArr[idx - 1] = temp;
+    
+    const updatedProperties = newArr.map((item, index) => ({
+      ...item,
+      displayOrder: index + 1,
+    }));
+    
+    setProperties(updatedProperties);
+    await updatePropertiesOrder(updatedProperties.map(p => ({ id: p.id, displayOrder: p.displayOrder! })));
+  };
+
+  const handleMovePropertyDown = async (id: string) => {
+    const idx = properties.findIndex((p) => p.id === id);
+    if (idx < 0 || idx >= properties.length - 1) return;
+    
+    const newArr = [...properties];
+    const temp = newArr[idx];
+    newArr[idx] = newArr[idx + 1];
+    newArr[idx + 1] = temp;
+    
+    const updatedProperties = newArr.map((item, index) => ({
+      ...item,
+      displayOrder: index + 1,
+    }));
+    
+    setProperties(updatedProperties);
+    await updatePropertiesOrder(updatedProperties.map(p => ({ id: p.id, displayOrder: p.displayOrder! })));
+  };
 
   // Update filters handler
   const handleUpdateFilters = (updated: Partial<SearchFilters>) => {
@@ -169,7 +279,13 @@ export default function App() {
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(sectionId);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      const headerOffset = 100;
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
     }
   };
 
@@ -231,16 +347,60 @@ export default function App() {
       if (filters.sortBy === 'price-asc') return (a.priceUSD || 0) - (b.priceUSD || 0);
       if (filters.sortBy === 'price-desc') return (b.priceUSD || 0) - (a.priceUSD || 0);
       if (filters.sortBy === 'area-desc') return (b.totalArea || 0) - (a.totalArea || 0);
-      // Default: recent
+      // Default: recent (respect displayOrder if present, otherwise createdAt timestamp)
+      if (a.displayOrder !== undefined || b.displayOrder !== undefined) {
+        const orderA = a.displayOrder !== undefined ? a.displayOrder : 999999;
+        const orderB = b.displayOrder !== undefined ? b.displayOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+      }
       const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+      const diff = (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+      if (diff !== 0) return diff;
+      const isCustomA = !a.id.startsWith('mef-10');
+      const isCustomB = !b.id.startsWith('mef-10');
+      if (isCustomA && !isCustomB) return -1;
+      if (!isCustomA && isCustomB) return 1;
+      return 0;
     });
   }, [filters, properties]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProperties.length / ITEMS_PER_PAGE));
+  const paginatedProperties = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProperties.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProperties, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      scrollToSection('catalogo');
+    }
+  };
 
   const favoritePropertiesList = useMemo(() => {
     return properties.filter((p) => favorites.includes(p.id));
   }, [favorites, properties]);
+
+  const handleExportBackup = () => {
+    exportPropertiesBackupJSON(properties);
+  };
+
+  const handleImportBackup = async (file: File) => {
+    try {
+      const text = await file.text();
+      const count = await importPropertiesBackupJSON(text);
+      alert(`Se restauraron/importaron ${count} propiedades a su catálogo correctamente.`);
+    } catch (err: any) {
+      alert(`Error al procesar el archivo de backup: ${err.message}`);
+    }
+  };
+
+  // Vintage period film LUT (35mm Kodachrome / Technicolor) tuned for historic town architecture, warm terracotta tones, and luminous bright skies
+  const scrollRatio = Math.min(1, scrollY / 300);
+  const vintageFactor = 1 - scrollRatio;
+  const grayscalePercent = Math.round(scrollRatio * 100);
+  const videoFilter = `grayscale(${grayscalePercent}%) sepia(${Math.round(32 * vintageFactor)}%) contrast(${Math.round(102 + 22 * vintageFactor)}%) saturate(${Math.round(105 + 40 * vintageFactor)}%) hue-rotate(${Math.round(-10 * vintageFactor)}deg) brightness(${Math.round(110 + 6 * vintageFactor)}%)`;
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-800 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
@@ -252,39 +412,85 @@ export default function App() {
           onLogout={handleLogoutAdmin}
           isFirebaseActive={isFirebaseConnected}
           totalPropertiesCount={properties.length}
+          onExportBackup={handleExportBackup}
+          onImportBackup={handleImportBackup}
         />
       )}
 
-      {/* 1. HEADER */}
-      <Header
-        favoritesCount={favorites.length}
-        currency={currency}
-        onToggleCurrency={() => setCurrency((prev) => (prev === 'USD' ? 'ARS' : 'USD'))}
-        onOpenFavorites={() => setFavoritesDrawerOpen(true)}
-        onOpenValuationModal={() => setValuationModalOpen(true)}
-        activeOperation={filters.operation}
-        onSelectOperation={(op) => {
-          handleUpdateFilters({ operation: op });
-          scrollToSection('propiedades');
-        }}
-        onScrollToSection={scrollToSection}
-        onOpenAdminLogin={handleAdminTrigger}
-        isAdminLoggedIn={isAdminLoggedIn}
-      />
+      {/* HERO SECTION WITH BACKGROUND DRONE VIDEO SPANNING HEADER & SEARCH */}
+      <div id="hero" className={`relative bg-[#121212] text-white overflow-hidden min-h-[100dvh] flex flex-col justify-between ${isAdminLoggedIn ? 'pt-[52px]' : ''}`}>
+        {/* Full-span Background Drone Video Layer */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-zinc-950">
+          <img
+            src="/mef-logo-white.png"
+            alt="Loading..."
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-auto object-contain opacity-50 z-0"
+          />
+          <video
+            ref={heroVideoRef}
+            src="/hero-video.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            style={{
+              filter: videoFilter,
+              willChange: 'filter, transform',
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+            }}
+            onLoadedData={(e) => {
+              e.currentTarget.style.display = 'block';
+            }}
+            onError={(e) => {
+              // Gracefully handle video loading errors without breaking React UI
+              e.currentTarget.style.display = 'none';
+            }}
+            className="absolute inset-0 w-full h-full object-cover object-top z-1"
+          />
+          {/* Vintage cinematic overlay gradient: luminous soft sky glow at top for clear open skies, fading to smooth subtle vignette at bottom */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/16 via-transparent to-black/40 pointer-events-none z-2" />
+        </div>
 
-      <main className="flex-1">
+        {/* 1. HEADER */}
+          <Header
+            favoritesCount={favorites.length}
+            currency={currency}
+            onToggleCurrency={() => setCurrency((prev) => (prev === 'USD' ? 'ARS' : 'USD'))}
+            onOpenFavorites={() => setFavoritesDrawerOpen(true)}
+            onOpenValuationModal={() => setValuationModalOpen(true)}
+            activeOperation={filters.operation}
+            onSelectOperation={(op) => {
+              handleUpdateFilters({ operation: op });
+              scrollToSection('catalogo');
+            }}
+            onScrollToSection={scrollToSection}
+            onOpenAdminLogin={handleAdminTrigger}
+            isAdminLoggedIn={isAdminLoggedIn}
+            onMenuToggle={setIsMenuOpen}
+          />
+
         {/* 2. HERO SEARCH ENGINE */}
-        <div id="hero">
+        <div className="relative z-10 flex-1 flex items-center justify-center pt-28 pb-8 sm:py-12">
           <HeroSearch
             filters={filters}
             onUpdateFilters={handleUpdateFilters}
             onOpenAdvancedFilters={() => setFilterModalOpen(true)}
             totalResultsCount={filteredProperties.length}
-            onSearchSubmit={() => scrollToSection('propiedades')}
+            onSearchSubmit={() => scrollToSection('catalogo')}
             onOpenMapView={() => setGoogleMapsModalOpen(true)}
           />
         </div>
+      </div>
 
+      <main className="flex-1 relative bg-zinc-50 overflow-hidden">
+        {/* Subtle Map Watermark Background */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-[0.09] bg-cover bg-center bg-fixed mix-blend-multiply filter contrast-125 grayscale"
+          style={{ backgroundImage: "url('/map-bg.jpg')" }}
+        />
+        <div className="relative z-10">
         {/* 3. MAIN PROPERTIES LISTING SECTION */}
         <section id="propiedades" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
           {/* RECENTLY UPLOADED SPOTLIGHT FEATURE */}
@@ -295,7 +501,7 @@ export default function App() {
           />
 
           {/* SECTION HEADER BAR */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-6">
+          <div id="catalogo" className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-6">
             <div>
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#48A82D]"></span>
@@ -313,27 +519,34 @@ export default function App() {
                   : 'Lotes y Terrenos Exclusivos'}
               </h2>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Mostrando <strong className="text-zinc-900">{filteredProperties.length}</strong> resultados de alta calidad
+                Mostrando <strong className="text-zinc-900">{filteredProperties.length}</strong> resultados
               </p>
             </div>
 
             {/* CONTROLS: Operation Switcher, View Mode, Sort */}
             <div className="flex flex-wrap items-center gap-3">
               {/* Quick Operation Pills */}
-              <div className="bg-zinc-200/70 p-1 rounded-xl flex gap-1">
-                {(['TODAS', 'VENTA', 'ALQUILER', 'LOTES'] as const).map((op) => (
-                  <button
-                    key={op}
-                    onClick={() => handleUpdateFilters({ operation: op })}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      filters.operation === op
-                        ? 'bg-[#181818] text-white shadow-xs'
-                        : 'text-zinc-700 hover:text-zinc-900'
-                    }`}
-                  >
-                    {op === 'TODAS' ? 'Todas' : op}
-                  </button>
-                ))}
+              <div className="bg-zinc-200/80 p-1.5 sm:p-2 rounded-2xl flex gap-1.5 sm:gap-2 shadow-xs">
+                {(['TODAS', 'VENTA', 'ALQUILER', 'LOTES'] as const).map((op) => {
+                  let activeClass = 'bg-[#181818] text-white shadow-md';
+                  if (op === 'VENTA') activeClass = 'bg-black text-white shadow-md';
+                  if (op === 'ALQUILER') activeClass = 'bg-zinc-500 text-white shadow-md';
+                  if (op === 'LOTES') activeClass = 'bg-[#48A82D] text-white shadow-md';
+
+                  return (
+                    <button
+                      key={op}
+                      onClick={() => handleUpdateFilters({ operation: op })}
+                      className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-extrabold transition-all cursor-pointer ${
+                        filters.operation === op
+                          ? activeClass
+                          : 'text-zinc-700 hover:text-zinc-900 hover:bg-zinc-300/50'
+                      }`}
+                    >
+                      {op === 'TODAS' ? 'Todas' : op}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* View Mode Toggle (Grid vs Map) */}
@@ -434,38 +647,115 @@ export default function App() {
           {/* PROPERTY DISPLAY (GRID OR MAP) */}
           {filteredProperties.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-3xl border border-zinc-200 p-8 space-y-4">
-              <div className="w-16 h-16 bg-[#48A82D]/10 text-[#48A82D] rounded-2xl flex items-center justify-center mx-auto">
-                <SlidersHorizontal className="w-8 h-8" />
+              <div className="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-bold text-zinc-900">
-                No encontramos propiedades con los filtros seleccionados
+                No encontramos la propiedad solicitada
               </h3>
-              <p className="text-sm text-zinc-500 max-w-md mx-auto">
-                Invertí o ampliá tus criterios de búsqueda (como zona, rango de precio o amenities) para explorar nuestro catálogo completo.
-              </p>
               <button
                 onClick={handleResetFilters}
-                className="px-6 py-3 bg-[#48A82D] text-white font-bold rounded-xl text-xs hover:bg-[#3C8F24] transition-all cursor-pointer shadow-md inline-flex items-center gap-2"
+                className="px-6 py-3 bg-[#48A82D] text-white font-bold rounded-xl text-xs hover:bg-[#3C8F24] transition-all cursor-pointer shadow-md inline-flex items-center gap-2 mt-2"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Ver todas las propiedades</span>
               </button>
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {filteredProperties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  currency={currency}
-                  isFavorite={favorites.includes(property.id)}
-                  onToggleFavorite={handleToggleFavorite}
-                  onSelectProperty={(p) => setSelectedProperty(p)}
-                  isAdmin={isAdminLoggedIn}
-                  onEditProperty={handleEditProperty}
-                  onDeleteProperty={handleDeleteProperty}
-                />
-              ))}
+            <div className="space-y-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                {paginatedProperties.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    currency={currency}
+                    isFavorite={favorites.includes(property.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    onSelectProperty={(p) => setSelectedProperty(p)}
+                    isAdmin={isAdminLoggedIn}
+                    onEditProperty={handleEditProperty}
+                    onDeleteProperty={handleDeleteProperty}
+                    onMoveUpProperty={
+                      filters.sortBy === 'recent' &&
+                      filters.operation === 'TODAS' &&
+                      filters.propertyType === 'TODOS' &&
+                      filters.zone === 'Todas las zonas' &&
+                      filters.refCodeSearch === '' &&
+                      filters.amenities.length === 0 &&
+                      !filters.onlyWithVideo &&
+                      !filters.onlyRecentlyUploaded &&
+                      filters.minPrice === 0 &&
+                      filters.maxPrice >= 2000000
+                        ? handleMovePropertyUp
+                        : undefined
+                    }
+                    onMoveDownProperty={
+                      filters.sortBy === 'recent' &&
+                      filters.operation === 'TODAS' &&
+                      filters.propertyType === 'TODOS' &&
+                      filters.zone === 'Todas las zonas' &&
+                      filters.refCodeSearch === '' &&
+                      filters.amenities.length === 0 &&
+                      !filters.onlyWithVideo &&
+                      !filters.onlyRecentlyUploaded &&
+                      filters.minPrice === 0 &&
+                      filters.maxPrice >= 2000000
+                        ? handleMovePropertyDown
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+
+              {/* PAGINATION CONTROLS */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-zinc-200">
+                  <div className="text-xs text-zinc-500 font-medium">
+                    Página <strong className="text-zinc-900 font-bold">{currentPage}</strong> de{' '}
+                    <strong className="text-zinc-900 font-bold">{totalPages}</strong> (Mostrando fichas{' '}
+                    {(currentPage - 1) * ITEMS_PER_PAGE + 1} a{' '}
+                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredProperties.length)} de{' '}
+                    {filteredProperties.length})
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs flex items-center gap-1"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Anterior</span>
+                    </button>
+
+                    {/* Bullet numbers */}
+                    <div className="flex items-center gap-1.5 px-2">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`w-8 h-8 rounded-full text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
+                            currentPage === pageNum
+                              ? 'bg-[#48A82D] text-white shadow-md scale-105'
+                              : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs flex items-center gap-1"
+                    >
+                      <span>Siguiente</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <MapView
@@ -478,31 +768,44 @@ export default function App() {
 
         {/* 4. BRAND VALUES & ABOUT SECTION */}
         <AboutSection />
+      </div>
       </main>
 
       {/* 5. FOOTER */}
       <Footer
         onSelectOperation={(op) => {
           handleUpdateFilters({ operation: op });
-          scrollToSection('propiedades');
+          scrollToSection('catalogo');
         }}
         onOpenValuationModal={() => setValuationModalOpen(true)}
         onOpenAdminLogin={handleAdminTrigger}
       />
 
       {/* FLOATING WHATSAPP CTA BUTTON */}
-      <a
-        href="https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20hacer%20una%20consulta."
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-40 bg-[#48A82D] hover:bg-[#3C8F24] text-white p-3.5 sm:p-4 rounded-full shadow-2xl transition-transform hover:scale-110 flex items-center justify-center border-2 border-white group"
-        title="Consultar por WhatsApp"
+      <div 
+        className={`fixed bottom-5 left-0 right-0 z-30 pointer-events-none flex justify-end max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 transition-opacity duration-300 ${
+          isMenuOpen || filterModalOpen || valuationModalOpen || favoritesDrawerOpen || googleMapsModalOpen || selectedProperty || adminLoginModalOpen || adminPropertyModalOpen
+            ? 'opacity-0 pointer-events-none'
+            : scrollY > 50
+            ? 'opacity-30 hover:opacity-100'
+            : 'opacity-100'
+        }`}
       >
-        <MessageSquare className="w-6 h-6 fill-white text-[#48A82D]" />
-        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-bold pl-0 group-hover:pl-2">
-          Consultar por WhatsApp
-        </span>
-      </a>
+        <a
+          href="https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20hacer%20una%20consulta."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pointer-events-auto bg-[#25D366] hover:bg-[#1DA851] text-white p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center border border-white/80 group"
+          title="Consultar por WhatsApp"
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+          </svg>
+          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-bold pl-0 group-hover:pl-2">
+            Consultar por WhatsApp
+          </span>
+        </a>
+      </div>
 
       {/* MODALS & DRAWERS */}
       <FilterModal

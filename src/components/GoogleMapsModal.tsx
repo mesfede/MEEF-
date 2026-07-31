@@ -26,7 +26,6 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
     const matchesSearch =
       searchQuery.trim() === '' ||
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.refCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.location.zone.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.location.address.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesOp && matchesSearch;
@@ -129,7 +128,7 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
             <input
               type="text"
-              placeholder="Buscar por dirección o COD.REF..."
+              placeholder="Buscar por dirección, zona o título..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white border border-zinc-300 rounded-lg pl-8 pr-3 py-1.5 text-xs font-medium text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
@@ -177,7 +176,7 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
                               isSelected ? 'text-[#48A82D]' : 'text-[#48A82D]'
                             }`}
                           >
-                            Ref: {p.refCode}
+                            {p.location.zone}
                           </span>
                           <span className={`text-[9px] font-bold uppercase ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
                             {p.operation}
@@ -231,7 +230,7 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-black bg-[#181818] text-[#48A82D] px-2 py-0.5 rounded uppercase tracking-wider">
-                        Ref: {activeProp.refCode}
+                        {activeProp.operation}
                       </span>
                       <span className="text-xs font-extrabold text-[#48A82D]">
                         {activeProp.priceARS && activeProp.priceARS > 0

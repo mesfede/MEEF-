@@ -1,17 +1,19 @@
-export type OperationType = 'VENTA' | 'ALQUILER' | 'LOTES';
+export type OperationType = 'VENTA' | 'ALQUILER' | 'ALQUILER TEMPORAL' | 'LOTES';
 
 export type PropertyType = 
   | 'Casa' 
   | 'Departamento' 
+  | 'Duplex'
   | 'Lote / Terreno' 
   | 'Barrio Cerrado' 
   | 'PH' 
   | 'Local / Oficina' 
+  | 'Galpón'
   | 'Quinta / Campo';
 
 export interface Property {
   id: string;
-  refCode: string;
+  refCode?: string;
   title: string;
   operation: OperationType;
   type: PropertyType;
@@ -52,6 +54,7 @@ export interface Property {
     email: string;
     avatar: string;
   };
+  displayOrder?: number;
   createdAt: string;
 }
 

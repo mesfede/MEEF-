@@ -14,7 +14,7 @@ export const Logo: React.FC<LogoProps> = ({
   // Height classes for clear, bold visibility
   const heightClasses = {
     sm: 'h-9 sm:h-10',
-    md: 'h-12 sm:h-14 lg:h-16',
+    md: 'h-[3.6rem] sm:h-[4.2rem] lg:h-[4.8rem]',
     lg: 'h-16 sm:h-20',
     xl: 'h-20 sm:h-24',
   };

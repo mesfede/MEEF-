@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
-import { Search, SlidersHorizontal, MapPin, Building2, DollarSign, CheckCircle2, Trees, Map, Sparkles, ShieldCheck } from 'lucide-react';
-import { OperationType, PropertyType, SearchFilters } from '../types';
-import { ZONES_LIST } from '../data/properties';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, SlidersHorizontal, Building2, DollarSign, CheckCircle2, Trees, Map, ShieldCheck } from 'lucide-react';
+import { PropertyType, SearchFilters } from '../types';
+
+const HERO_PHRASES = [
+  { prefix: 'Encontrá tu propiedad en', green: 'General La Madrid y alrededores.' },
+  { prefix: 'Encontrá el lugar donde', green: 'empieza tu próxima historia.' },
+  { prefix: 'La casa de tus sueños está', green: 'más cerca de lo que imaginás.' },
+  { prefix: 'Descubrí el hogar ideal', green: 'para vos y tu familia.' },
+  { prefix: 'Donde imaginás vivir,', green: 'nosotros te ayudamos a llegar.' },
+  { prefix: 'Elegí el espacio', green: 'que siempre soñaste.' },
+  { prefix: 'Tu nuevo hogar', green: 'te está esperando.' },
+  { prefix: 'Cada propiedad,', green: 'una nueva oportunidad.' },
+  { prefix: 'Viví donde', green: 'siempre quisiste.' },
+];
 
 interface HeroSearchProps {
   filters: SearchFilters;
@@ -20,200 +31,171 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   onSearchSubmit,
   onOpenMapView,
 }) => {
-  const [keyword, setKeyword] = useState(filters.refCodeSearch || '');
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  const propertyTypeOptions: (PropertyType | 'TODOS')[] = [
-    'TODOS',
-    'Casa',
-    'Departamento',
-    'Lote / Terreno',
-    'Barrio Cerrado',
-    'PH',
-    'Local / Oficina',
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(() => {
+        // Autoplay policy fallback
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const currentPhraseObj = HERO_PHRASES[phraseIndex];
+    const totalLength = currentPhraseObj.prefix.length + currentPhraseObj.green.length;
+    let timer: NodeJS.Timeout;
+
+    if (!isDeleting && charCount === totalLength) {
+      timer = setTimeout(() => {
+        setIsDeleting(true);
+      }, 2500);
+    } else if (isDeleting && charCount === 0) {
+      setIsDeleting(false);
+      setPhraseIndex((prev) => (prev + 1) % HERO_PHRASES.length);
+      timer = setTimeout(() => {}, 200);
+    } else {
+      const speed = isDeleting ? 40 : 100;
+      timer = setTimeout(() => {
+        setCharCount((prev) => (isDeleting ? prev - 1 : prev + 1));
+      }, speed);
+    }
+
+    return () => clearTimeout(timer);
+  }, [charCount, isDeleting, phraseIndex]);
+
+  const currentPhraseObj = HERO_PHRASES[phraseIndex];
+  const typedPrefix = currentPhraseObj.prefix.substring(0, Math.min(charCount, currentPhraseObj.prefix.length));
+  const typedGreen = charCount > currentPhraseObj.prefix.length
+    ? currentPhraseObj.green.substring(0, charCount - currentPhraseObj.prefix.length)
+    : '';
+
+  const propertyTypeOptions: { value: PropertyType | 'TODOS'; label: string }[] = [
+    { value: 'TODOS', label: 'Todos los tipos' },
+    { value: 'Casa', label: 'Casa' },
+    { value: 'Departamento', label: 'Departamento' },
+    { value: 'Duplex', label: 'Duplex' },
+    { value: 'Local / Oficina', label: 'Local / Oficina' },
+    { value: 'Galpón', label: 'Galpón' },
+    { value: 'Lote / Terreno', label: 'Lote / Terreno' },
   ];
 
-  const handleTabChange = (op: OperationType) => {
-    onUpdateFilters({ operation: op });
-  };
-
-  const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setKeyword(val);
-    onUpdateFilters({ refCodeSearch: val });
-  };
+  const operationOptions = [
+    { value: 'TODAS', label: 'Todas las operaciones' },
+    { value: 'VENTA', label: 'Venta' },
+    { value: 'ALQUILER', label: 'Alquiler' },
+    { value: 'ALQUILER TEMPORAL', label: 'Alquiler Temporal' },
+  ];
 
   return (
-    <section className="relative bg-[#181818] text-white pt-12 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-      {/* Background Architectural Overlay */}
-      <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center mix-blend-overlay"></div>
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#48A82D]/15 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#48A82D]/10 rounded-full blur-3xl pointer-events-none"></div>
-
-      <div className="relative max-w-5xl mx-auto text-center space-y-6">
-        {/* Brand Tagline */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#48A82D]/40 text-[#48A82D] text-xs font-semibold tracking-wider uppercase">
-          <Sparkles className="w-3.5 h-3.5 text-[#48A82D]" />
-          <span className="text-white font-medium">MARIA EUGENIA FERNÁNDEZ • General La Madrid & Región</span>
+    <section className="relative text-white py-4 px-4 sm:px-6 lg:px-8 w-full flex items-center justify-center">
+      <div className="relative z-10 max-w-6xl mx-auto text-center space-y-5 w-full">
+        {/* Desktop Hero Headline (Typewriter) */}
+        <div className="hidden sm:flex min-h-[5.5rem] lg:min-h-[6.5rem] items-center justify-center px-2 py-1 overflow-hidden">
+          <h1 className="tracking-tight text-center max-w-6xl mx-auto flex flex-col items-center justify-center gap-0 leading-tight">
+            {/* Line 1: White Text (Light) */}
+            <span 
+              className="block sm:text-5xl lg:text-[3.6rem] font-light text-white leading-tight text-center drop-shadow-[0_2px_1.5px_rgba(0,0,0,0.95)]"
+            >
+              {typedPrefix || '\u00A0'}
+              {charCount <= currentPhraseObj.prefix.length && (
+                <span className="inline-block sm:w-[4px] h-[0.8em] bg-white ml-1.5 animate-pulse align-middle rounded-full drop-shadow-[0_2px_1.5px_rgba(0,0,0,0.95)]" />
+              )}
+            </span>
+            {/* Line 2: Green Accent Text (Bold / Black) */}
+            <span 
+              className="block sm:text-5xl lg:text-[3.6rem] font-black text-[#48A82D] leading-tight text-center drop-shadow-[0_2px_1.5px_rgba(0,0,0,0.95)]"
+            >
+              {typedGreen || '\u00A0'}
+              {charCount > currentPhraseObj.prefix.length && (
+                <span className="inline-block sm:w-[4px] h-[0.8em] bg-[#48A82D] ml-1.5 animate-pulse align-middle rounded-full drop-shadow-[0_2px_1.5px_rgba(0,0,0,0.95)]" />
+              )}
+            </span>
+          </h1>
         </div>
 
-        {/* Hero Headline */}
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-          Encontrá tu propiedad en <br className="hidden sm:inline" />
-          <span className="text-[#48A82D]">
-            General La Madrid y alrededores
-          </span>
-        </h1>
-
-        <p className="max-w-2xl mx-auto text-zinc-300 text-sm sm:text-base font-normal leading-relaxed">
-          Especialistas en la venta, alquiler y tasación de casas, quintas, lotes y campos en General La Madrid, Laprida, Coronel Suárez y la zona.
-        </p>
-
-        {/* SEARCH WIDGET CARD */}
-        <div className="mt-8 bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-zinc-800 border border-zinc-200 max-w-4xl mx-auto transition-all">
-          {/* Operation Tabs [VENTA | ALQUILER | LOTES | GOOGLE MAPS] */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-4 mb-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => handleTabChange('VENTA')}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
-                  filters.operation === 'VENTA'
-                    ? 'bg-[#181818] text-white border-2 border-[#48A82D] shadow-md'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900'
-                }`}
-              >
-                <Building2 className={`w-4 h-4 ${filters.operation === 'VENTA' ? 'text-[#48A82D]' : 'text-zinc-500'}`} />
-                <span>VENTAS</span>
-              </button>
-
-              <button
-                onClick={() => handleTabChange('ALQUILER')}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
-                  filters.operation === 'ALQUILER'
-                    ? 'bg-[#181818] text-white border-2 border-[#48A82D] shadow-md'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900'
-                }`}
-              >
-                <DollarSign className={`w-4 h-4 ${filters.operation === 'ALQUILER' ? 'text-[#48A82D]' : 'text-zinc-500'}`} />
-                <span>ALQUILERES</span>
-              </button>
-
-              <button
-                onClick={() => handleTabChange('LOTES')}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
-                  filters.operation === 'LOTES'
-                    ? 'bg-[#181818] text-white border-2 border-[#48A82D] shadow-md'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900'
-                }`}
-              >
-                <Trees className={`w-4 h-4 ${filters.operation === 'LOTES' ? 'text-[#48A82D]' : 'text-zinc-500'}`} />
-                <span>LOTES Y TERRENOS</span>
-              </button>
-            </div>
-
-            {onOpenMapView && (
-              <button
-                onClick={onOpenMapView}
-                className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-emerald-50 text-[#48A82D] border-2 border-[#48A82D] hover:bg-[#48A82D] hover:text-white transition-all cursor-pointer flex items-center gap-2 shadow-xs"
-                title="Ver propiedades en Google Maps"
-              >
-                <Map className="w-4 h-4" />
-                <span>Buscar por Google Maps</span>
-              </button>
-            )}
-          </div>
-
-          {/* Quick Filters Bar (12 Columns for tight COD.REF and airy Buscar button) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
-            {/* Property Type Dropdown (3 cols) */}
-            <div className="flex flex-col text-left lg:col-span-3">
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-[#48A82D]" />
+        {/* TRANSLUCENT WHITE GLASS SEARCH WIDGET CARD */}
+        <div className="mt-4 bg-white/20 backdrop-blur-[4px] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] p-4 sm:p-5 text-zinc-900 border border-white/40 max-w-6xl mx-auto transition-all">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            {/* Tipo de Propiedad Dropdown (3 cols) */}
+            <div className="flex flex-col text-left md:col-span-3">
+              <label className="text-xs font-black text-white uppercase tracking-wider mb-1 flex items-center gap-1 drop-shadow-md">
+                <Building2 className="w-4 h-4 text-[#48A82D]" />
                 <span>Tipo de Propiedad</span>
               </label>
               <select
                 value={filters.propertyType}
                 onChange={(e) => onUpdateFilters({ propertyType: e.target.value as PropertyType | 'TODOS' })}
-                className="w-full bg-zinc-50 border border-zinc-300 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D] transition-all"
+                className="w-full h-12 bg-white/95 border border-white/50 rounded-xl px-3 text-sm sm:text-base font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#48A82D] focus:border-[#48A82D] transition-all cursor-pointer shadow-sm accent-[#48A82D]"
               >
-                {propertyTypeOptions.map((type) => (
-                  <option key={type} value={type}>
-                    {type === 'TODOS' ? 'Todos los tipos' : type}
+                {propertyTypeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-white text-zinc-900 py-1">
+                    {opt.label}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Zone / Location Dropdown (3 cols) */}
-            <div className="flex flex-col text-left lg:col-span-3">
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-[#48A82D]" />
-                <span>Zona / Barrio</span>
+            {/* Operación Dropdown (4 cols) */}
+            <div className="flex flex-col text-left md:col-span-4">
+              <label className="text-xs font-black text-white uppercase tracking-wider mb-1 flex items-center gap-1 drop-shadow-md">
+                <DollarSign className="w-4 h-4 text-[#48A82D]" />
+                <span>Operación</span>
               </label>
               <select
-                value={filters.zone}
-                onChange={(e) => onUpdateFilters({ zone: e.target.value })}
-                className="w-full bg-zinc-50 border border-zinc-300 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D] transition-all"
+                value={filters.operation}
+                onChange={(e) => onUpdateFilters({ operation: e.target.value as any })}
+                className="w-full h-12 bg-white/95 border border-white/50 rounded-xl px-3 text-sm sm:text-base font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#48A82D] focus:border-[#48A82D] transition-all cursor-pointer shadow-sm accent-[#48A82D]"
               >
-                {ZONES_LIST.map((z) => (
-                  <option key={z} value={z}>
-                    {z}
+                {operationOptions.map((op) => (
+                  <option key={op.value} value={op.value} className="bg-white text-zinc-900 py-1">
+                    {op.label}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Keyword or Ref Code Search (Narrower: 2 cols) */}
-            <div className="flex flex-col text-left lg:col-span-2">
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Search className="w-3.5 h-3.5 text-[#48A82D]" />
-                <span>COD.REF</span>
-              </label>
-              <input
-                type="text"
-                placeholder="MEF-GLM01"
-                value={keyword}
-                onChange={handleKeywordChange}
-                className="w-full bg-zinc-50 border border-zinc-300 rounded-lg px-2.5 py-2.5 text-xs font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D] transition-all placeholder:text-zinc-400"
-              />
-            </div>
+            {/* Search CTA and Maps / Filter Triggers (5 cols) */}
+            <div className="flex flex-col text-left md:col-span-5">
+              <div className="hidden md:block h-[20px] mb-1"></div>
+              <div className="flex items-center gap-2">
+                {onOpenMapView && (
+                  <button
+                    onClick={onOpenMapView}
+                    className="group h-12 bg-white/95 hover:bg-[#48A82D] text-zinc-800 hover:text-white font-bold px-3 rounded-xl text-sm flex items-center justify-center gap-1 border border-white/50 hover:border-[#48A82D] transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
+                    title="Ver mapa de propiedades"
+                  >
+                    <Map className="w-4 h-4 text-[#48A82D] group-hover:text-white shrink-0 transition-colors" />
+                    <span>Ver Mapa</span>
+                  </button>
+                )}
 
-            {/* Search CTA and Advanced Filters trigger (Spacious: 4 cols) */}
-            <div className="flex items-center gap-2 lg:col-span-4">
-              <button
-                onClick={onOpenAdvancedFilters}
-                className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold px-3 py-2.5 rounded-lg text-xs sm:text-sm flex items-center justify-center gap-1 transition-all cursor-pointer border border-zinc-300 whitespace-nowrap shrink-0"
-                title="Abrir filtros avanzados"
-              >
-                <SlidersHorizontal className="w-4 h-4 text-[#48A82D]" />
-                <span>Filtros</span>
-              </button>
+                <button
+                  onClick={onOpenAdvancedFilters}
+                  className="h-12 w-12 bg-white/95 hover:bg-zinc-100 text-zinc-800 font-bold p-0 rounded-xl text-sm flex items-center justify-center transition-all cursor-pointer border border-white/50 shrink-0 shadow-sm"
+                  title="Abrir filtros avanzados"
+                >
+                  <SlidersHorizontal className="w-4.5 h-4.5 text-[#48A82D]" />
+                </button>
 
-              <button
-                onClick={onSearchSubmit}
-                className="flex-1 bg-[#48A82D] hover:bg-[#3C8F24] text-white font-bold px-4 py-2.5 rounded-lg text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer whitespace-nowrap"
-              >
-                <Search className="w-4 h-4 text-white shrink-0" />
-                <span className="whitespace-nowrap">Buscar ({totalResultsCount})</span>
-              </button>
+                <button
+                  onClick={onSearchSubmit}
+                  className="flex-1 h-12 bg-[#48A82D] hover:bg-[#3C8F24] text-white font-bold px-4 rounded-xl text-sm sm:text-base flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer whitespace-nowrap"
+                >
+                  <Search className="w-4.5 h-4.5 text-white shrink-0" />
+                  <span>Buscar</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Trust Badges */}
-        <div className="pt-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-zinc-300 text-xs font-medium">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#48A82D]" />
-            <span>Asesoramiento Legal e Inmobiliario</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[#48A82D]" />
-            <span>Tasaciones Profesionales</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Trees className="w-4 h-4 text-[#48A82D]" />
-            <span>Casas, Quintas, Lotes y Campos</span>
-          </div>
-        </div>
+
       </div>
     </section>
   );

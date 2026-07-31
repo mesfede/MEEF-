@@ -88,20 +88,27 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">
               Operación
             </label>
-            <div className="grid grid-cols-4 gap-2">
-              {(['TODAS', 'VENTA', 'ALQUILER', 'LOTES'] as const).map((op) => (
-                <button
-                  key={op}
-                  onClick={() => onUpdateFilters({ operation: op })}
-                  className={`py-2 text-xs font-bold rounded-lg transition-all border cursor-pointer ${
-                    filters.operation === op
-                      ? 'bg-[#181818] text-white border-[#48A82D]'
-                      : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
-                  }`}
-                >
-                  {op === 'TODAS' ? 'Todas' : op}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {(['TODAS', 'VENTA', 'ALQUILER', 'LOTES', 'ALQUILER TEMPORAL'] as const).map((op) => {
+                let activeStyle = 'bg-[#181818] text-white border-[#48A82D]';
+                if (op === 'VENTA') activeStyle = 'bg-black text-white border-black';
+                if (op === 'ALQUILER' || op === 'ALQUILER TEMPORAL') activeStyle = 'bg-zinc-500 text-white border-zinc-500';
+                if (op === 'LOTES') activeStyle = 'bg-[#48A82D] text-white border-[#48A82D]';
+
+                return (
+                  <button
+                    key={op}
+                    onClick={() => onUpdateFilters({ operation: op as any })}
+                    className={`py-2 px-1 text-xs font-bold rounded-lg transition-all border cursor-pointer truncate ${
+                      filters.operation === op
+                        ? activeStyle
+                        : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
+                    }`}
+                  >
+                    {op === 'TODAS' ? 'Todas' : op}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -118,10 +125,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               <option value="TODOS">Todos los tipos</option>
               <option value="Casa">Casa</option>
               <option value="Departamento">Departamento</option>
-              <option value="Lote / Terreno">Lote / Terreno</option>
-              <option value="Barrio Cerrado">Barrio Cerrado</option>
-              <option value="PH">PH</option>
+              <option value="Duplex">Duplex</option>
               <option value="Local / Oficina">Local / Oficina</option>
+              <option value="Galpón">Galpón</option>
+              <option value="Lote / Terreno">Lote / Terreno</option>
             </select>
           </div>
 
@@ -237,14 +244,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             />
           </div>
 
-          {/* Reference Code Search */}
+          {/* Keyword Search */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">
-              Código de Referencia (Ref ID)
+              Búsqueda por Palabra Clave
             </label>
             <input
               type="text"
-              placeholder="Ej: MEF-4821"
+              placeholder="Ej: quincho, centro, pileta..."
               value={filters.refCodeSearch}
               onChange={(e) => onUpdateFilters({ refCodeSearch: e.target.value })}
               className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-sm text-zinc-800 focus:ring-2 focus:ring-[#48A82D]"
