@@ -10,6 +10,8 @@ const getInstagramEmbedUrl = (url?: string): string | null => {
 import React, { useState, useRef, useEffect } from 'react';
 import { X, MapPin, Maximize, Bed, Bath, Car, Phone, Mail, CheckCircle2, ChevronLeft, ChevronRight, Share2, Heart, Trees, Video, ExternalLink, Star, FileText, Plus, Minus, Home } from 'lucide-react';
 import { Property } from '../types';
+import { getAssetUrl } from '../lib/utils';
+
 
 interface PropertyDetailModalProps {
   property: Property | null;
@@ -98,7 +100,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
         {/* TOP MODAL HEADER */}
         <div className="bg-[#181818] text-white px-4 py-3 sm:px-5 flex items-center justify-between border-b border-[#48A82D] shrink-0">
           <div className="flex items-center gap-3">
-            <img src="/logo-white.png" alt="Inmobiliaria" className="h-10 sm:h-12 w-auto object-contain" />
+            <img src={getAssetUrl('/logo-white.png')} alt="Inmobiliaria" className="h-10 sm:h-12 w-auto object-contain" />
           </div>
 
           <div className="flex items-center gap-2">
@@ -167,7 +169,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
                 {/* Subtle Logo Watermark Overlay */}
                 <div className="absolute bottom-4 right-4 pointer-events-none opacity-[0.4] z-10 w-16 h-16">
-                  <img src="/logo-white.png" alt="" className="w-full h-full object-contain drop-shadow-md" />
+                  <img src={getAssetUrl('/logo-white.png')} alt="" className="w-full h-full object-contain drop-shadow-md" />
                 </div>
 
                 {/* Center Side-to-Side Status Banner */}
@@ -704,7 +706,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               />
               {/* Subtle Logo Watermark Overlay for Zoom */}
               <div className="absolute bottom-6 right-6 pointer-events-none opacity-[0.4] z-10 w-24 h-24">
-                <img src="/logo-white.png" alt="" className="w-full h-full object-contain drop-shadow-lg" />
+                <img src={getAssetUrl('/logo-white.png')} alt="" className="w-full h-full object-contain drop-shadow-lg" />
               </div>
             </div>
             {property.images.length > 1 && (

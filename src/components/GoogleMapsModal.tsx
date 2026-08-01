@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, MapPin, ExternalLink, Building2, Search, Navigation, DollarSign, Trees, ArrowRight, Eye } from 'lucide-react';
 import { Property, OperationType } from '../types';
+import { getAssetUrl } from '../lib/utils';
+
 
 interface GoogleMapsModalProps {
   isOpen: boolean;
@@ -52,8 +54,8 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
         <div className="bg-[#181818] text-white p-4 sm:px-6 flex items-center justify-between shrink-0 border-b border-zinc-800">
           <div className="flex items-center gap-3">
             <img
-              src="/mef-logo-white.png"
-              onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
+              src={getAssetUrl('/mef-logo-white.png')}
+              onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = getAssetUrl('/MEF_logo_svg.png'); }}
               alt="MEF Negocios Inmobiliarios"
               className="h-9 sm:h-10 w-auto object-contain"
             />

@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { Home, Play, ArrowUpRight, MapPin, Maximize, Bed, Bath, Car, Video } from 'lucide-react';
 import { Property } from '../types';
+import { getAssetUrl } from '../lib/utils';
+
 
 interface RecentSpotlightProps {
   properties: Property[];
@@ -79,7 +81,7 @@ export const RecentSpotlight: React.FC<RecentSpotlightProps> = ({
 
           {/* Subtle Logo Watermark Overlay */}
           <div className="absolute bottom-4 right-4 pointer-events-none opacity-[0.4] z-10 w-16 h-16">
-            <img src="/logo-white.png" alt="" className="w-full h-full object-contain drop-shadow-md" />
+            <img src={getAssetUrl('/logo-white.png')} alt="" className="w-full h-full object-contain drop-shadow-md" />
           </div>
 
           {hasVideoOrReel && (

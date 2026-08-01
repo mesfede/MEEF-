@@ -1,4 +1,5 @@
 import React from 'react';
+import { getAssetUrl } from '../lib/utils';
 
 interface LogoProps {
   className?: string;
@@ -19,17 +20,18 @@ export const Logo: React.FC<LogoProps> = ({
     xl: 'h-20 sm:h-24',
   };
 
-  const primarySrc = variant === 'light' ? '/mef-logo-white.png' : '/mef-logo.png';
+  const primarySrc = getAssetUrl(variant === 'light' ? '/mef-logo-white.png' : '/mef-logo.png');
 
   return (
     <div className={`inline-flex items-center select-none ${className}`}>
       <img
         src={primarySrc}
-        onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
+        onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = getAssetUrl('/MEF_logo_svg.png'); }}
         alt="MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios"
         className={`${heightClasses[size]} w-auto object-contain transition-transform duration-300 hover:scale-102 filter drop-shadow-xs`}
       />
     </div>
   );
 };
+
 

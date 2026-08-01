@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { MapPin, Navigation, ExternalLink, Search, Globe, Building2 } from 'lucide-react';
 import { Property } from '../types';
+import { getAssetUrl } from '../lib/utils';
+
 
 interface MapViewProps {
   properties: Property[];
@@ -47,8 +49,8 @@ export const MapView: React.FC<MapViewProps> = ({
       <div className="bg-[#181818] text-white p-4 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-zinc-800">
         <div className="flex items-center gap-3">
           <img
-            src="/mef-logo-white.png"
-            onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
+            src={getAssetUrl('/mef-logo-white.png')}
+            onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = getAssetUrl('/MEF_logo_svg.png'); }}
             alt="MEF Logo"
             className="h-8 w-auto object-contain"
           />
@@ -124,8 +126,8 @@ export const MapView: React.FC<MapViewProps> = ({
                   {/* Brand Logo Thumbnail */}
                   <div className="w-8 h-8 rounded-lg bg-zinc-900 p-1 flex items-center justify-center shrink-0 border border-zinc-700">
                     <img
-                      src="/mef-logo-white.png"
-                      onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
+                      src={getAssetUrl('/mef-logo-white.png')}
+                      onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = getAssetUrl('/MEF_logo_svg.png'); }}
                       alt="MEF"
                       className="w-full h-auto object-contain"
                     />

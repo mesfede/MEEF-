@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw, ChevronLeft, ChevronRight, AlertTriangle, Upload, Plus } from 'lucide-react';
 import { Property, SearchFilters, OperationType, PropertyType } from './types';
+import { getAssetUrl } from './lib/utils';
+
 import {
   subscribeToProperties,
   deletePropertyFromFirestore,
@@ -457,13 +459,13 @@ export default function App() {
         {/* Full-span Background Drone Video Layer */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-zinc-950">
           <img
-            src="/mef-logo-white.png"
+            src={getAssetUrl('/mef-logo-white.png')}
             alt="Loading..."
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-auto object-contain opacity-50 z-0"
           />
           <video
             ref={heroVideoRef}
-            src="/hero-video.mp4"
+            src={getAssetUrl('/hero-video.mp4')}
             autoPlay
             loop
             muted

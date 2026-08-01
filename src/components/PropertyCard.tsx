@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Heart, MapPin, Maximize, Bed, Bath, Car, Trees, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Star, Flame, Instagram, Edit3, Trash2, ArrowUp, ArrowDown, Home } from 'lucide-react';
 import { Property } from '../types';
+import { getAssetUrl } from '../lib/utils';
+
 
 interface PropertyCardProps {
   property: Property;
@@ -84,7 +86,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         
         {/* Subtle Logo Watermark Overlay */}
         <div className="absolute bottom-3 right-3 pointer-events-none opacity-[0.4] z-10 w-12 h-12">
-          <img src="/logo-white.png" alt="" className="w-full h-full object-contain" />
+          <img src={getAssetUrl('/logo-white.png')} alt="" className="w-full h-full object-contain" />
         </div>
 
         {/* Center Side-to-Side Status Banner */}
