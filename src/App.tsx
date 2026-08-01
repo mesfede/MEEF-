@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw, ChevronLeft, ChevronRight, AlertTriangle, Upload, Plus } from 'lucide-react';
 import { Property, SearchFilters, OperationType, PropertyType } from './types';
 import { getAssetUrl } from './lib/utils';
@@ -27,8 +28,12 @@ import { RecentSpotlight } from './components/RecentSpotlight';
 import { AdminBar } from './components/AdminBar';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
+import { IntroScreen } from './components/IntroScreen';
 
 export default function App() {
+  // Intro screen state
+  const [showIntro, setShowIntro] = useState(true);
+
   // Hero Video Ref & Autoplay Guarantee
   const heroVideoRef = useRef<HTMLVideoElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -827,7 +832,15 @@ export default function App() {
         }}
         onOpenValuationModal={() => setValuationModalOpen(true)}
         onOpenAdminLogin={handleAdminTrigger}
+        onReplayIntro={() => setShowIntro(true)}
       />
+
+      {/* INTRO SCREEN ANIMATION */}
+      <AnimatePresence>
+        {showIntro && (
+          <IntroScreen onEnter={() => setShowIntro(false)} />
+        )}
+      </AnimatePresence>
 
       {/* FLOATING WHATSAPP CTA BUTTON */}
       <div 

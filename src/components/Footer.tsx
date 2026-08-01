@@ -7,11 +7,13 @@ interface FooterProps {
   onSelectOperation: (op: OperationType | 'TODAS') => void;
   onOpenValuationModal?: () => void;
   onOpenAdminLogin?: () => void;
+  onReplayIntro?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   onSelectOperation,
   onOpenAdminLogin,
+  onReplayIntro,
 }) => {
   return (
     <footer id="contacto" className="bg-gradient-to-b from-[#121212] via-[#181818] to-black text-zinc-300 pt-16 pb-8 border-t-2 border-[#48A82D] relative overflow-hidden">
@@ -143,6 +145,15 @@ export const Footer: React.FC<FooterProps> = ({
               </button>
             )}
           </p>
+
+          {onReplayIntro && (
+            <button
+              onClick={onReplayIntro}
+              className="px-3 py-1 bg-zinc-800/80 hover:bg-[#48A82D] hover:text-white text-zinc-400 rounded-full text-xs font-semibold transition-all cursor-pointer border border-zinc-700/60 flex items-center gap-1.5"
+            >
+              <span>Ver Intro de bienvenida</span>
+            </button>
+          )}
         </div>
       </div>
     </footer>
