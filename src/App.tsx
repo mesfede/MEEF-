@@ -509,7 +509,7 @@ export default function App() {
           />
 
         {/* 2. HERO SEARCH ENGINE */}
-        <div className="relative z-10 flex-1 flex items-center justify-center pt-28 pb-8 sm:py-12">
+        <div className="relative z-10 flex-1 flex items-end sm:items-center justify-center pb-2 sm:py-12">
           <HeroSearch
             filters={filters}
             onUpdateFilters={handleUpdateFilters}
@@ -832,11 +832,9 @@ export default function App() {
       {/* FLOATING WHATSAPP CTA BUTTON */}
       <div 
         className={`fixed bottom-5 left-0 right-0 z-30 pointer-events-none flex justify-end max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 transition-opacity duration-300 ${
-          isMenuOpen || filterModalOpen || valuationModalOpen || favoritesDrawerOpen || googleMapsModalOpen || selectedProperty || adminLoginModalOpen || adminPropertyModalOpen
+          isMenuOpen || filterModalOpen || valuationModalOpen || favoritesDrawerOpen || googleMapsModalOpen || selectedProperty || adminLoginModalOpen || adminPropertyModalOpen || scrollY <= 50
             ? 'opacity-0 pointer-events-none'
-            : scrollY > 50
-            ? 'opacity-30 hover:opacity-100'
-            : 'opacity-100'
+            : 'opacity-30 hover:opacity-100'
         }`}
       >
         <a

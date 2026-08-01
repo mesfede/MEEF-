@@ -91,8 +91,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   ];
 
   return (
-    <section className="relative text-white py-4 px-4 sm:px-6 lg:px-8 w-full flex items-center justify-center">
-      <div className="relative z-10 max-w-6xl mx-auto text-center space-y-5 w-full">
+    <section className="relative text-white py-1 sm:py-4 px-3 sm:px-6 lg:px-8 w-full flex items-end sm:items-center justify-center">
+      <div className="relative z-10 max-w-6xl mx-auto text-center space-y-2 sm:space-y-5 w-full">
         {/* Desktop Hero Headline (Typewriter) */}
         <div className="hidden sm:flex min-h-[5.5rem] lg:min-h-[6.5rem] items-center justify-center px-2 py-1 overflow-hidden">
           <h1 className="tracking-tight text-center max-w-6xl mx-auto flex flex-col items-center justify-center gap-0 leading-tight">
@@ -118,7 +118,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         </div>
 
         {/* TRANSLUCENT WHITE GLASS SEARCH WIDGET CARD */}
-        <div className="mt-4 bg-white/20 backdrop-blur-[4px] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] p-4 sm:p-5 text-zinc-900 border border-white/40 max-w-6xl mx-auto transition-all">
+        <div className="mt-0 sm:mt-4 bg-white/20 backdrop-blur-[4px] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] p-4 sm:p-5 text-zinc-900 border border-white/40 max-w-6xl mx-auto transition-all">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             {/* Tipo de Propiedad Dropdown (4 cols) */}
             <div className="flex flex-col text-left md:col-span-4">
