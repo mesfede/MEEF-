@@ -31,6 +31,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -40,6 +41,24 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev - 1 + property.images.length) % property.images.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 35) {
+      if (diff > 0) {
+        setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
+      } else {
+        setCurrentImageIndex((prev) => (prev - 1 + property.images.length) % property.images.length);
+      }
+    }
+    setTouchStartX(null);
   };
 
   const displayPrice = () => {
@@ -76,11 +95,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   return (
     <div className="group bg-white rounded-2xl overflow-hidden border border-zinc-200 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
       {/* CARD TOP IMAGE CONTAINER */}
-      <div className="relative aspect-4/3 overflow-hidden bg-zinc-100 cursor-pointer" onClick={() => onSelectProperty(property)}>
+      <div 
+        className="relative aspect-4/3 overflow-hidden bg-zinc-100 cursor-pointer select-none" 
+        onClick={() => onSelectProperty(property)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <img
           src={property.images?.[currentImageIndex] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'}
           alt={property.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
           onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
         />
         
@@ -109,13 +133,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <>
             <button
               onClick={prevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40 hover:bg-black/70 text-white opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer z-20"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40 hover:bg-black/70 text-white opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer z-20"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

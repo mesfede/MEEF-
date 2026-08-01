@@ -265,7 +265,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                         key={idx}
                         onClick={() => setActiveImageIndex(idx)}
                         onDoubleClick={() => setZoomImage(img)}
-                        className={`relative w-20 h-16 sm:w-24 sm:h-18 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                        className={`relative w-[62%] sm:w-24 h-20 sm:h-18 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
                           idx === activeImageIndex
                             ? 'border-[#48A82D] scale-102 shadow-md ring-2 ring-[#48A82D]/20'
                             : 'border-transparent opacity-60 hover:opacity-100'

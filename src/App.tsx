@@ -513,7 +513,6 @@ export default function App() {
           <HeroSearch
             filters={filters}
             onUpdateFilters={handleUpdateFilters}
-            onOpenAdvancedFilters={() => setFilterModalOpen(true)}
             totalResultsCount={filteredProperties.length}
             onSearchSubmit={() => scrollToSection('catalogo')}
             onOpenMapView={() => setGoogleMapsModalOpen(true)}

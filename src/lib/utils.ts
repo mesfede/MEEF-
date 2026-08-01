@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 export const getAssetUrl = (path: string): string => {
   if (!path) return path;
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {

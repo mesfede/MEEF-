@@ -57,7 +57,7 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
               src={getAssetUrl('/mef-logo-white.png')}
               onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = getAssetUrl('/MEF_logo_svg.png'); }}
               alt="MEF Negocios Inmobiliarios"
-              className="h-9 sm:h-10 w-auto object-contain"
+              className="h-10 sm:h-12 w-auto object-contain"
             />
             <div className="hidden sm:block border-l border-zinc-700 pl-3 text-left">
               <h3 className="text-xs sm:text-sm font-bold text-[#48A82D] uppercase tracking-wider">
@@ -79,58 +79,58 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
         </div>
 
         {/* MODAL NAVBAR / OPERATION FILTERS */}
-        <div className="bg-zinc-100 border-b border-zinc-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+        <div className="bg-zinc-100 border-b border-zinc-200 px-3 sm:px-4 py-2 flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-between gap-2 shrink-0">
+          <div className="flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto">
             <button
               onClick={() => setSelectedOp('TODAS')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`hidden sm:inline-block px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedOp === 'TODAS'
                   ? 'bg-[#181818] text-white shadow-xs'
                   : 'bg-white text-zinc-700 hover:bg-zinc-200 border border-zinc-300'
               }`}
             >
-              Todas ({properties.length})
+              Todas
             </button>
             <button
               onClick={() => setSelectedOp('VENTA')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 selectedOp === 'VENTA'
                   ? 'bg-[#181818] text-white shadow-xs'
                   : 'bg-white text-zinc-700 hover:bg-zinc-200 border border-zinc-300'
               }`}
             >
-              <Building2 className="w-3.5 h-3.5 text-[#48A82D]" />
+              <Building2 className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
               <span>Ventas</span>
             </button>
             <button
               onClick={() => setSelectedOp('ALQUILER')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 selectedOp === 'ALQUILER'
                   ? 'bg-[#181818] text-white shadow-xs'
                   : 'bg-white text-zinc-700 hover:bg-zinc-200 border border-zinc-300'
               }`}
             >
-              <DollarSign className="w-3.5 h-3.5 text-[#48A82D]" />
+              <DollarSign className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
               <span>Alquileres</span>
             </button>
             <button
               onClick={() => setSelectedOp('LOTES')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 selectedOp === 'LOTES'
                   ? 'bg-[#181818] text-white shadow-xs'
                   : 'bg-white text-zinc-700 hover:bg-zinc-200 border border-zinc-300'
               }`}
             >
-              <Trees className="w-3.5 h-3.5 text-[#48A82D]" />
+              <Trees className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
               <span>Lotes</span>
             </button>
           </div>
 
-          <div className="relative flex-1 max-w-xs">
+          <div className="relative flex-1 max-w-full sm:max-w-xs hidden sm:block">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
             <input
               type="text"
-              placeholder="Buscar por dirección, zona o título..."
+              placeholder="Buscar ubicación o título..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white border border-zinc-300 rounded-lg pl-8 pr-3 py-1.5 text-xs font-medium text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
@@ -141,19 +141,10 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
         {/* MODAL MAIN CONTENT: SIDEBAR + MAP IFRAME */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
           {/* PROPERTY SELECTOR SIDEBAR */}
-          <div className="w-full md:w-80 lg:w-96 bg-zinc-50 border-r border-zinc-200 flex flex-col shrink-0 h-48 md:h-full overflow-hidden">
-            <div className="p-2.5 bg-zinc-200/60 text-left border-b border-zinc-200 flex items-center justify-between">
-              <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
-                Propiedades ({filteredProperties.length})
-              </span>
-              <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">
-                Doble clic para ver ficha
-              </span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          <div className="w-full md:w-80 lg:w-96 bg-zinc-50 border-r border-zinc-200 flex flex-col shrink-0 h-[160px] sm:h-[175px] md:h-full overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-y-auto p-2 gap-2 items-stretch">
               {filteredProperties.length === 0 ? (
-                <div className="p-6 text-center text-zinc-500 text-xs font-medium">
+                <div className="p-6 text-center text-zinc-500 text-xs font-medium w-full">
                   No se encontraron propiedades con ese criterio.
                 </div>
               ) : (
@@ -168,7 +159,7 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
                         onSelectProperty(p);
                       }}
                       title="Haz clic para ubicar en el mapa, o doble clic para ver la ficha completa"
-                      className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all flex gap-3 items-center group relative ${
+                      className={`w-full shrink-0 p-2.5 rounded-xl border text-left cursor-pointer transition-all flex gap-3 items-center group relative ${
                         isSelected
                           ? 'bg-zinc-900 text-white border-[#48A82D] shadow-md ring-1 ring-[#48A82D]'
                           : 'bg-white text-zinc-900 border-zinc-200 hover:border-[#48A82D] hover:shadow-xs'

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, Building2, DollarSign, CheckCircle2, Trees, Map, ShieldCheck } from 'lucide-react';
+import { Search, Building2, DollarSign, CheckCircle2, Trees, Map, ShieldCheck } from 'lucide-react';
 import { PropertyType, SearchFilters } from '../types';
 
 const HERO_PHRASES = [
@@ -17,7 +17,6 @@ const HERO_PHRASES = [
 interface HeroSearchProps {
   filters: SearchFilters;
   onUpdateFilters: (updated: Partial<SearchFilters>) => void;
-  onOpenAdvancedFilters: () => void;
   totalResultsCount: number;
   onSearchSubmit: () => void;
   onOpenMapView?: () => void;
@@ -26,7 +25,6 @@ interface HeroSearchProps {
 export const HeroSearch: React.FC<HeroSearchProps> = ({
   filters,
   onUpdateFilters,
-  onOpenAdvancedFilters,
   totalResultsCount,
   onSearchSubmit,
   onOpenMapView,
@@ -122,8 +120,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         {/* TRANSLUCENT WHITE GLASS SEARCH WIDGET CARD */}
         <div className="mt-4 bg-white/20 backdrop-blur-[4px] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] p-4 sm:p-5 text-zinc-900 border border-white/40 max-w-6xl mx-auto transition-all">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            {/* Tipo de Propiedad Dropdown (3 cols) */}
-            <div className="flex flex-col text-left md:col-span-3">
+            {/* Tipo de Propiedad Dropdown (4 cols) */}
+            <div className="flex flex-col text-left md:col-span-4">
               <label className="text-xs font-black text-white uppercase tracking-wider mb-1 flex items-center gap-1 drop-shadow-md">
                 <Building2 className="w-4 h-4 text-[#48A82D]" />
                 <span>Tipo de Propiedad</span>
@@ -160,8 +158,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               </select>
             </div>
 
-            {/* Search CTA and Maps / Filter Triggers (5 cols) */}
-            <div className="flex flex-col text-left md:col-span-5">
+            {/* Search CTA and Maps Trigger (4 cols) */}
+            <div className="flex flex-col text-left md:col-span-4">
               <div className="hidden md:block h-[20px] mb-1"></div>
               <div className="flex items-center gap-2">
                 {onOpenMapView && (
@@ -174,14 +172,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     <span>Ver Mapa</span>
                   </button>
                 )}
-
-                <button
-                  onClick={onOpenAdvancedFilters}
-                  className="h-12 w-12 bg-white/95 hover:bg-zinc-100 text-zinc-800 font-bold p-0 rounded-xl text-sm flex items-center justify-center transition-all cursor-pointer border border-white/50 shrink-0 shadow-sm"
-                  title="Abrir filtros avanzados"
-                >
-                  <SlidersHorizontal className="w-4.5 h-4.5 text-[#48A82D]" />
-                </button>
 
                 <button
                   onClick={onSearchSubmit}

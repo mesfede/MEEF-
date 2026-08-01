@@ -52,7 +52,7 @@ export const MapView: React.FC<MapViewProps> = ({
             src={getAssetUrl('/mef-logo-white.png')}
             onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = getAssetUrl('/MEF_logo_svg.png'); }}
             alt="MEF Logo"
-            className="h-8 w-auto object-contain"
+            className="h-10 sm:h-12 w-auto object-contain"
           />
           <div className="text-left border-l border-zinc-700 pl-3">
             <span className="text-xs font-bold text-[#48A82D] block uppercase tracking-wider">
@@ -66,7 +66,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
         {/* Map Search Input & Direct Google Maps CTA */}
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-72">
+          <div className="relative flex-1 md:w-72 hidden sm:block">
             <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
             <input
               type="text"
@@ -235,7 +235,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 setSelectedMapProperty(p);
                 onSelectProperty(p);
               }}
-              className={`w-64 rounded-xl p-3 border shadow-xs transition-all cursor-pointer shrink-0 flex gap-3 items-center ${
+              className={`w-[78%] sm:w-64 rounded-xl p-3 border shadow-xs transition-all cursor-pointer shrink-0 flex gap-3 items-center ${
                 activeProp?.id === p.id
                   ? 'bg-zinc-900 text-white border-[#48A82D] ring-2 ring-[#48A82D]/30'
                   : 'bg-white text-zinc-900 border-zinc-200 hover:border-[#48A82D]'
