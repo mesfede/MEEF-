@@ -142,7 +142,10 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
           <div className="w-full md:w-80 lg:w-96 bg-zinc-50 border-r border-zinc-200 flex flex-col shrink-0 h-48 md:h-full overflow-hidden">
             <div className="p-2.5 bg-zinc-200/60 text-left border-b border-zinc-200 flex items-center justify-between">
               <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
-                Seleccionar Propiedad ({filteredProperties.length})
+                Propiedades ({filteredProperties.length})
+              </span>
+              <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">
+                Doble clic para ver ficha
               </span>
             </div>
 
@@ -158,7 +161,12 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
                     <div
                       key={p.id}
                       onClick={() => setSelectedProperty(p)}
-                      className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all flex gap-3 items-center ${
+                      onDoubleClick={() => {
+                        onClose();
+                        onSelectProperty(p);
+                      }}
+                      title="Haz clic para ubicar en el mapa, o doble clic para ver la ficha completa"
+                      className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all flex gap-3 items-center group relative ${
                         isSelected
                           ? 'bg-zinc-900 text-white border-[#48A82D] shadow-md ring-1 ring-[#48A82D]'
                           : 'bg-white text-zinc-900 border-zinc-200 hover:border-[#48A82D] hover:shadow-xs'
@@ -187,13 +195,30 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
                           <MapPin className="w-3 h-3 text-[#48A82D] shrink-0" />
                           <span>{p.location.address}</span>
                         </p>
-                        <p className="text-xs font-extrabold text-[#48A82D] mt-0.5">
-                          {p.priceARS && p.priceARS > 0
-                            ? `$ ${p.priceARS.toLocaleString('es-AR')} ARS`
-                            : p.priceUSD && p.priceUSD > 0
-                            ? `USD $${p.priceUSD.toLocaleString('en-US')}`
-                            : 'Consultar'}
-                        </p>
+                        <div className="flex items-center justify-between mt-1 pt-1 border-t border-zinc-700/20">
+                          <p className="text-xs font-extrabold text-[#48A82D]">
+                            {p.priceARS && p.priceARS > 0
+                              ? `$ ${p.priceARS.toLocaleString('es-AR')} ARS`
+                              : p.priceUSD && p.priceUSD > 0
+                              ? `USD $${p.priceUSD.toLocaleString('en-US')}`
+                              : 'Consultar'}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onClose();
+                              onSelectProperty(p);
+                            }}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors ${
+                              isSelected
+                                ? 'bg-[#48A82D] text-white hover:bg-[#3d9124]'
+                                : 'bg-zinc-100 text-zinc-800 hover:bg-[#48A82D] hover:text-white border border-zinc-300'
+                            }`}
+                          >
+                            Ver Ficha
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -214,67 +239,6 @@ export const GoogleMapsModal: React.FC<GoogleMapsModalProps> = ({
                 allowFullScreen
               ></iframe>
             </div>
-
-            {/* ACTIVE PROPERTY BOTTOM BADGE / ACTION OVERLAY */}
-            {activeProp && (
-              <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-xl border-2 border-[#48A82D] flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-                <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 p-1 flex items-center justify-center shrink-0 border border-zinc-700">
-                    <img
-                      src="/mef-logo-white.png"
-                      onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = '/MEF_logo_svg.png'; }}
-                      alt="MEF"
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black bg-[#181818] text-[#48A82D] px-2 py-0.5 rounded uppercase tracking-wider">
-                        {activeProp.operation}
-                      </span>
-                      <span className="text-xs font-extrabold text-[#48A82D]">
-                        {activeProp.priceARS && activeProp.priceARS > 0
-                          ? `$ ${activeProp.priceARS.toLocaleString('es-AR')} ARS`
-                          : activeProp.priceUSD && activeProp.priceUSD > 0
-                          ? `USD $${activeProp.priceUSD.toLocaleString('en-US')}`
-                          : 'Consultar'}
-                      </span>
-                    </div>
-                    <h4 className="text-xs sm:text-sm font-bold text-zinc-900 truncate mt-0.5">
-                      {activeProp.title}
-                    </h4>
-                    <p className="text-[11px] text-zinc-600 truncate flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
-                      <span>{activeProp.location.address}, {activeProp.location.zone}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
-                  <a
-                    href={externalGoogleMapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 sm:flex-initial bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-300 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Navigation className="w-3.5 h-3.5 text-[#48A82D]" />
-                    <span>Google Maps</span>
-                    <ExternalLink className="w-3 h-3 text-zinc-500" />
-                  </a>
-
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onSelectProperty(activeProp);
-                    }}
-                    className="flex-1 sm:flex-initial bg-[#48A82D] hover:bg-[#3C8F24] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Ver Ficha</span>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

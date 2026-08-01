@@ -170,6 +170,21 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                   <img src="/logo-white.png" alt="" className="w-full h-full object-contain drop-shadow-md" />
                 </div>
 
+                {/* Center Side-to-Side Status Banner */}
+                {property.statusBanner && property.statusBanner !== 'NINGUNA' && (
+                  <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 z-25 py-4 sm:py-5 px-6 text-center font-black text-lg sm:text-2xl uppercase tracking-widest pointer-events-none transition-all shadow-2xl ${
+                    property.statusBanner.toLowerCase().includes('vendida')
+                      ? 'bg-[#48A82D]/92 text-black border-y-2 border-black'
+                      : property.statusBanner.toLowerCase().includes('reservada')
+                      ? 'bg-zinc-600/90 text-white border-y-2 border-zinc-900'
+                      : 'bg-black/88 text-white border-y-2 border-[#48A82D]'
+                  }`}>
+                    <span className={property.statusBanner.toLowerCase().includes('vendida') ? 'text-black mr-3' : 'text-[#48A82D] mr-3'}>●</span>
+                    {property.statusBanner}
+                    <span className={property.statusBanner.toLowerCase().includes('vendida') ? 'text-black ml-3' : 'text-[#48A82D] ml-3'}>●</span>
+                  </div>
+                )}
+
                 {/* Double click instruction overlay badge */}
                 <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
                   <Maximize className="w-3 h-3 text-[#48A82D]" />

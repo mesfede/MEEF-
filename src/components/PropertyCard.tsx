@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MapPin, Maximize, Bed, Bath, Car, Trees, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Star, Flame, Instagram, Edit3, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Heart, MapPin, Maximize, Bed, Bath, Car, Trees, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Star, Flame, Instagram, Edit3, Trash2, ArrowUp, ArrowDown, Home } from 'lucide-react';
 import { Property } from '../types';
 
 interface PropertyCardProps {
@@ -87,6 +87,21 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <img src="/logo-white.png" alt="" className="w-full h-full object-contain" />
         </div>
 
+        {/* Center Side-to-Side Status Banner */}
+        {property.statusBanner && property.statusBanner !== 'NINGUNA' && (
+          <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 py-3 sm:py-4 px-4 text-center font-black text-sm sm:text-base uppercase tracking-widest pointer-events-none transition-all shadow-2xl ${
+            property.statusBanner.toLowerCase().includes('vendida')
+              ? 'bg-[#48A82D]/92 text-black border-y-2 border-black'
+              : property.statusBanner.toLowerCase().includes('reservada')
+              ? 'bg-zinc-600/90 text-white border-y-2 border-zinc-900'
+              : 'bg-black/88 text-white border-y-2 border-[#48A82D]'
+          }`}>
+            <span className={property.statusBanner.toLowerCase().includes('vendida') ? 'text-black mr-2' : 'text-[#48A82D] mr-2'}>●</span>
+            {property.statusBanner}
+            <span className={property.statusBanner.toLowerCase().includes('vendida') ? 'text-black ml-2' : 'text-[#48A82D] ml-2'}>●</span>
+          </div>
+        )}
+
         {/* Carousel arrows */}
         {property.images.length > 1 && (
           <>
@@ -122,9 +137,15 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${getOperationBadgeColor()}`}>
             {property.operation}
           </span>
+          {property.featured && (
+            <span className="text-[10px] font-black px-2.5 py-1 rounded-md bg-orange-500 text-black uppercase tracking-wider flex items-center gap-1 shadow-md">
+              <Home className="w-3 h-3 text-black shrink-0" />
+              <span>DESTACADA</span>
+            </span>
+          )}
           {property.isRecentlyUploaded && (
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-yellow-400 text-yellow-950 uppercase tracking-wider flex items-center gap-1 shadow-md">
-              <Flame className="w-3 h-3 fill-yellow-950 text-yellow-950" />
+            <span className="text-[10px] font-black px-2.5 py-1 rounded-md bg-yellow-400 text-black uppercase tracking-wider flex items-center gap-1 shadow-md">
+              <Flame className="w-3 h-3 fill-black text-black shrink-0" />
               <span>RECIÉN SUBIDA</span>
             </span>
           )}

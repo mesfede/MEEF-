@@ -14,24 +14,51 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', app: 'MEF Negocios Inmobiliarios' });
 });
 
+// Helper to generate a fallback description if API key is not present or API call fails
+function generateFallbackDescription(data: any): string {
+  const { title, type, operation, city, zone, coveredArea, bedrooms, bathrooms, priceARS, priceUSD, amenities } = data;
+  const opText = operation === 'VENTA' ? 'en Venta' : operation === 'ALQUILER' ? 'en Alquiler' : 'disponible';
+  const locationText = city || zone || 'General La Madrid';
+  const propTitle = title || `${type || 'Propiedad'} ${opText}`;
+
+  const amenitiesList = Array.isArray(amenities) && amenities.length > 0 
+    ? amenities.join(', ') 
+    : 'Servicios conectados y excelentes comodidades';
+
+  const specsText = [
+    bedrooms ? `${bedrooms} dormitorio${bedrooms > 1 ? 's' : ''}` : null,
+    bathrooms ? `${bathrooms} baño${bathrooms > 1 ? 's' : ''}` : null,
+    coveredArea ? `${coveredArea} m² cubiertos` : null,
+  ].filter(Boolean).join(', ');
+
+  return `Excelente oportunidad inmobiliaria: ${propTitle} ${opText} en ${locationText}.
+
+Esta propiedad se destaca por su sólida construcción, distribución funcional y ambientes luminosos. ${specsText ? `Cuenta con ${specsText}.` : ''}
+
+Características principales:
+- Ubicación estratégica en ${locationText} con excelente accesibilidad.
+- Comodidades y servicios: ${amenitiesList}.
+- Ideal tanto para residencia familiar como para inversión a largo plazo.
+
+Contactanos en MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios para coordinar una visita personalizada o recibir asesoramiento profesional sin compromiso.`;
+}
+
 // AI Description Generator endpoint
 app.post('/api/generate-description', async (req, res) => {
   try {
-    const { title, type, operation, zone, priceARS, priceUSD, coveredArea, bedrooms, bathrooms, amenities } = req.body;
-    
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
-    }
+    const { title, type, operation, city, zone, priceARS, priceUSD, coveredArea, bedrooms, bathrooms, amenities } = req.body;
+    const locationText = city || zone || 'General La Madrid';
 
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const prompt = `Actúa como un experto asesor inmobiliario senior de MEF Negocios Inmobiliarios en General La Madrid, Buenos Aires.
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        const prompt = `Actúa como un experto asesor inmobiliario senior de MEF Negocios Inmobiliarios en General La Madrid, Buenos Aires.
 Redacta una descripción comercial, atractiva, profesional y vendedora para una propiedad con las siguientes características:
 - Título: ${title || 'Propiedad en venta/alquiler'}
 - Tipo: ${type || 'Inmueble'}
 - Operación: ${operation || 'VENTA'}
-- Zona: ${zone || 'General La Madrid'}
+- Ciudad / Ubicación: ${locationText}
 - Superficie cubierta: ${coveredArea || 'N/D'} m²
 - Habitaciones: ${bedrooms || 'N/D'}
 - Baños: ${bathrooms || 'N/D'}
@@ -41,16 +68,25 @@ Redacta una descripción comercial, atractiva, profesional y vendedora para una 
 
 La descripción debe estar redactada en español fluido, destacar los puntos fuertes de la propiedad, generar interés en posibles compradores o inquilinos, incluir formato profesional con párrafos claros, y un tono cálido y profesional. No incluyas placeholders ni corchetes. Solo el texto redactado listo para publicar.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: prompt,
-    });
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+        });
 
-    const description = response.text || '';
-    res.json({ description });
+        if (response.text && response.text.trim().length > 0) {
+          return res.json({ description: response.text.trim() });
+        }
+      } catch (geminiError) {
+        console.warn('Gemini API call failed, falling back to smart generator:', geminiError);
+      }
+    }
+
+    // Fallback if API key is missing or call failed
+    const fallbackDesc = generateFallbackDescription(req.body);
+    res.json({ description: fallbackDesc });
   } catch (err: any) {
     console.error('Error generating AI description:', err);
-    res.status(500).json({ error: err.message || 'Error generating description' });
+    res.json({ description: generateFallbackDescription(req.body) });
   }
 });
 

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Plus, LogOut, ShieldCheck, CheckCircle2, Download, Upload, FileText } from 'lucide-react';
+import { Plus, LogOut, ShieldCheck, CheckCircle2, Download, Upload, Cloud } from 'lucide-react';
 
 interface AdminBarProps {
   adminEmail: string;
@@ -9,6 +9,7 @@ interface AdminBarProps {
   totalPropertiesCount: number;
   onExportBackup?: () => void;
   onImportBackup?: (file: File) => void;
+  onSyncFirebase?: () => Promise<void>;
 }
 
 export const AdminBar: React.FC<AdminBarProps> = ({
@@ -17,9 +18,25 @@ export const AdminBar: React.FC<AdminBarProps> = ({
   totalPropertiesCount,
   onExportBackup,
   onImportBackup,
+  onSyncFirebase,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncClick = async () => {
+    if (!onSyncFirebase) return;
+    setIsSyncing(true);
+    try {
+      await onSyncFirebase();
+      setMsg('¡Sincronizado con Firebase!');
+    } catch {
+      setMsg('Error al sincronizar');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setMsg(''), 4000);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,6 +82,33 @@ export const AdminBar: React.FC<AdminBarProps> = ({
           className="hidden"
         />
 
+        {/* Sync to Firebase Button */}
+        {onSyncFirebase && (
+          <button
+            type="button"
+            onClick={handleSyncClick}
+            disabled={isSyncing}
+            className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+            title="Subir todas las propiedades locales a la nube de Firebase"
+          >
+            <Cloud className={`w-4 h-4 text-emerald-400 ${isSyncing ? 'animate-bounce' : ''}`} />
+            <span className="inline">{isSyncing ? 'Subiendo...' : 'Sincronizar Firebase'}</span>
+          </button>
+        )}
+
+        {/* Backup Import Button */}
+        {onImportBackup && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+            title="Importar catálogo desde archivo JSON a Firebase"
+          >
+            <Upload className="w-4 h-4 text-amber-400" />
+            <span className="inline">Importar JSON</span>
+          </button>
+        )}
+
         {/* Backup Export Button */}
         {onExportBackup && (
           <button
@@ -74,20 +118,7 @@ export const AdminBar: React.FC<AdminBarProps> = ({
             title="Descargar copia de seguridad en archivo JSON"
           >
             <Download className="w-4 h-4 text-[#48A82D]" />
-            <span className="hidden md:inline">Descargar Backup</span>
-          </button>
-        )}
-
-        {/* Backup Import Button */}
-        {onImportBackup && (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-zinc-200 border border-zinc-700/80 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
-            title="Restaurar propiedades desde archivo JSON"
-          >
-            <Upload className="w-4 h-4 text-amber-400" />
-            <span className="hidden md:inline">Importar Backup</span>
+            <span className="hidden sm:inline">Descargar Backup</span>
           </button>
         )}
 

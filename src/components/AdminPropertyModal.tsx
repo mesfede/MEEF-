@@ -23,6 +23,8 @@ import {
   HelpCircle,
   Star,
   Upload,
+  Home,
+  Flame,
 } from 'lucide-react';
 import { Property, OperationType, PropertyType } from '../types';
 import { ZONES_LIST } from '../data/properties';
@@ -125,6 +127,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
   const [featured, setFeatured] = useState(false);
   const [isNewDevelopment, setIsNewDevelopment] = useState(false);
   const [isRecentlyUploaded, setIsRecentlyUploaded] = useState(true);
+  const [statusBanner, setStatusBanner] = useState<string>('NINGUNA');
   const [displayOrder, setDisplayOrder] = useState<number | ''>('');
   const [allAmenities, setAllAmenities] = useState<string[]>(getStoredAmenities());
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
@@ -146,7 +149,8 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
           title,
           type,
           operation,
-          zone,
+          city: city || zone || 'General La Madrid',
+          zone: city || zone || 'General La Madrid',
           priceARS: priceARS === '' ? undefined : priceARS,
           priceUSD: priceUSD === '' ? undefined : priceUSD,
           coveredArea: coveredArea === '' ? undefined : coveredArea,
@@ -209,6 +213,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       setFeatured(Boolean(propertyToEdit.featured));
       setIsNewDevelopment(Boolean(propertyToEdit.isNewDevelopment));
       setIsRecentlyUploaded(Boolean(propertyToEdit.isRecentlyUploaded));
+      setStatusBanner(propertyToEdit.statusBanner || 'NINGUNA');
       setDisplayOrder(propertyToEdit.displayOrder !== undefined ? propertyToEdit.displayOrder : '');
 
       const propAmenities = propertyToEdit.amenities || [];
@@ -228,6 +233,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       setMainImageIndex(0);
       setVideoUrl('');
       setInstagramUrl('');
+      setStatusBanner('NINGUNA');
       setAllAmenities(stored);
       setSelectedAmenities(['Parrilla', 'Gas Natural', 'Agua Corriente']);
     }
@@ -319,7 +325,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       priceARS: priceARS ? Number(priceARS) : 0,
       expensesARS: expensesARS ? Number(expensesARS) : 0,
       location: {
-        zone: zone || 'General La Madrid - Centro',
+        zone: city.trim() || zone.trim() || 'General La Madrid',
         address: address.trim() || 'General La Madrid',
         city: city.trim() || 'General La Madrid',
         lat: Number(lat) || -37.2483,
@@ -335,6 +341,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       featured,
       isNewDevelopment,
       isRecentlyUploaded,
+      statusBanner: statusBanner && statusBanner !== 'NINGUNA' ? statusBanner : null,
       displayOrder: displayOrder !== '' ? Number(displayOrder) : undefined,
       videoUrl: videoUrl.trim(),
       videoType,
@@ -353,29 +360,11 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
 
     try {
       if (targetId) {
-        // Attempt update with safety timeout
-        await Promise.race([
-          updatePropertyInFirestore(targetId, propertyPayload),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout de Firestore')), 5000)
-          ),
-        ]).catch((err) => {
-          console.warn('Sync warning:', err);
-        });
+        await updatePropertyInFirestore(targetId, propertyPayload);
         setSuccessMsg('¡Propiedad actualizada exitosamente!');
       } else {
-        try {
-          const newDocId = await Promise.race([
-            addPropertyToFirestore(propertyPayload),
-            new Promise<string>((_, reject) =>
-              setTimeout(() => reject(new Error('Timeout de Firestore')), 5000)
-            ),
-          ]);
-          targetId = newDocId;
-        } catch (err) {
-          console.warn('Sync warning on add:', err);
-          targetId = `mef-${Date.now()}`;
-        }
+        const newDocId = await addPropertyToFirestore(propertyPayload);
+        targetId = newDocId;
         setSuccessMsg('¡Nueva propiedad guardada exitosamente!');
       }
 
@@ -383,8 +372,6 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
         id: targetId || `mef-${Date.now()}`,
         ...propertyPayload,
       };
-
-      saveCustomLocalProperty(savedFullProperty);
 
       setTimeout(() => {
         if (onSavedSuccess) onSavedSuccess(savedFullProperty);
@@ -409,11 +396,8 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
             </div>
             <div>
               <h3 className="text-xs sm:text-sm font-bold text-[#48A82D] uppercase tracking-wider">
-                {propertyToEdit ? 'Editar Propiedad' : 'Cargar Nueva Propiedad Real'}
+                {propertyToEdit ? 'Editar Propiedad' : 'Carga de nueva propiedad'}
               </h3>
-              <p className="text-[11px] text-zinc-400">
-                Formulario de carga directa a la Base de Datos de MEF Negocios Inmobiliarios
-              </p>
             </div>
           </div>
 
@@ -553,26 +537,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
               <span>2. Ubicación y Geolocalización</span>
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-[11px] font-bold text-zinc-600 uppercase mb-1">
-                  Zona / Barrio *
-                </label>
-                <input
-                  type="text"
-                  value={zone}
-                  onChange={(e) => setZone(e.target.value)}
-                  placeholder="Ej: General La Madrid - Centro"
-                  list="zones-list"
-                  className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
-                />
-                <datalist id="zones-list">
-                  {ZONES_LIST.map((z) => (
-                    <option key={z} value={z} />
-                  ))}
-                </datalist>
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-zinc-600 uppercase mb-1">
                   Dirección
@@ -899,24 +864,30 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
 
             {/* BADGES / TOGGLES */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-zinc-200 bg-white cursor-pointer hover:bg-zinc-100 transition-colors">
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-amber-300 bg-amber-50/80 cursor-pointer hover:bg-amber-100 transition-colors">
                 <input
                   type="checkbox"
                   checked={featured}
                   onChange={(e) => setFeatured(e.target.checked)}
-                  className="w-4 h-4 text-[#48A82D] rounded focus:ring-[#48A82D]"
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
                 />
-                <span className="text-xs font-bold text-zinc-800">⭐ Destacada en Inicio</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-orange-500 text-black text-xs font-black uppercase tracking-wide shadow-xs">
+                  <Home className="w-3.5 h-3.5 text-black shrink-0" />
+                  <span>Destacada en Inicio</span>
+                </span>
               </label>
 
-              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-zinc-200 bg-white cursor-pointer hover:bg-zinc-100 transition-colors">
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-yellow-300 bg-yellow-50/80 cursor-pointer hover:bg-yellow-100 transition-colors">
                 <input
                   type="checkbox"
                   checked={isRecentlyUploaded}
                   onChange={(e) => setIsRecentlyUploaded(e.target.checked)}
-                  className="w-4 h-4 text-[#48A82D] rounded focus:ring-[#48A82D]"
+                  className="w-4 h-4 text-yellow-600 rounded focus:ring-yellow-500"
                 />
-                <span className="text-xs font-bold text-zinc-800">🔥 Etiqueta "Recién Subida"</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-400 text-black text-xs font-black uppercase tracking-wide shadow-xs">
+                  <Flame className="w-3.5 h-3.5 text-black fill-black shrink-0" />
+                  <span>Recién Subida</span>
+                </span>
               </label>
 
               <label className="flex items-center gap-2.5 p-3 rounded-xl border border-zinc-200 bg-white cursor-pointer hover:bg-zinc-100 transition-colors">
@@ -928,6 +899,26 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                 />
                 <span className="text-xs font-bold text-zinc-800">🏗️ Emprendimiento / En Pozo</span>
               </label>
+            </div>
+
+            {/* STATUS BANNER SELECTOR */}
+            <div className="bg-white p-4 rounded-xl border border-zinc-300 space-y-2">
+              <label className="text-xs font-bold text-zinc-800 uppercase tracking-wider block">
+                🏷️ Etiqueta Central sobre la Imagen (Banner de lado a lado)
+              </label>
+              <select
+                value={statusBanner}
+                onChange={(e) => setStatusBanner(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
+              >
+                <option value="NINGUNA">Sin etiqueta central</option>
+                <option value="Últimos lotes!">Últimos lotes!</option>
+                <option value="Reservada">Reservada</option>
+                <option value="Vendida">Vendida</option>
+              </select>
+              <p className="text-[11px] text-zinc-500">
+                Aparecerá en el centro de la ficha cubriendo todo el ancho de la imagen principal.
+              </p>
             </div>
 
             {/* CUSTOM DISPLAY ORDER / PRIORITY POSITION */}

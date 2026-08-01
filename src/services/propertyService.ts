@@ -14,7 +14,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Property } from '../types';
-import { PROPERTIES_DATA } from '../data/properties';
 
 const PROPERTIES_COLLECTION = 'properties';
 const DELETED_PROPERTIES_KEY = 'mef_deleted_property_ids';
@@ -44,7 +43,20 @@ export const markPropertyAsDeletedLocal = (id: string) => {
 export const getCustomLocalProperties = (): Property[] => {
   try {
     const raw = localStorage.getItem(CUSTOM_PROPERTIES_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    
+    let properties: Property[] = JSON.parse(raw);
+    
+    // Filter out old example properties (which had short IDs like '1', '2', '3')
+    const originalLength = properties.length;
+    properties = properties.filter(p => p.id && p.id.toString().length > 5);
+    
+    // If we removed some, update local storage immediately
+    if (properties.length < originalLength) {
+      localStorage.setItem(CUSTOM_PROPERTIES_KEY, JSON.stringify(properties));
+    }
+    
+    return properties;
   } catch {
     return [];
   }
@@ -53,11 +65,15 @@ export const getCustomLocalProperties = (): Property[] => {
 export const saveCustomLocalProperty = (property: Property) => {
   try {
     const current = getCustomLocalProperties();
-    const idx = current.findIndex((p) => p.id === property.id || (p.refCode && p.refCode === property.refCode));
+    const cleanProp: Property = {
+      ...property,
+      statusBanner: property.statusBanner && property.statusBanner !== 'NINGUNA' ? property.statusBanner : undefined,
+    };
+    const idx = current.findIndex((p) => p.id === cleanProp.id || (p.refCode && p.refCode === cleanProp.refCode));
     if (idx >= 0) {
-      current[idx] = property;
+      current[idx] = cleanProp;
     } else {
-      current.unshift(property);
+      current.unshift(cleanProp);
     }
     localStorage.setItem(CUSTOM_PROPERTIES_KEY, JSON.stringify(current));
     window.dispatchEvent(new Event('mef_local_properties_updated'));
@@ -81,6 +97,7 @@ export const removeCustomLocalProperty = (id: string) => {
 const mapDocToProperty = (id: string, data: any): Property => {
   return {
     id,
+    displayOrder: data.displayOrder !== undefined ? Number(data.displayOrder) : undefined,
     refCode: data.refCode || `MEF-${id.slice(0, 5).toUpperCase()}`,
     title: data.title || 'Propiedad sin título',
     operation: data.operation || 'VENTA',
@@ -107,10 +124,12 @@ const mapDocToProperty = (id: string, data: any): Property => {
     featured: Boolean(data.featured),
     isNewDevelopment: Boolean(data.isNewDevelopment),
     isRecentlyUploaded: Boolean(data.isRecentlyUploaded),
+    statusBanner: data.statusBanner && data.statusBanner !== 'NINGUNA' ? data.statusBanner : undefined,
     videoUrl: data.videoUrl || '',
     videoType: data.videoType || (data.videoUrl?.includes('youtube') ? 'youtube' : 'mp4'),
     instagramUrl: data.instagramUrl || '',
     amenities: Array.isArray(data.amenities) ? data.amenities : [],
+    lotFeatures: data.lotFeatures || undefined,
     agent: {
       name: data.agent?.name || 'María Eugenia Fernández',
       phone: data.agent?.phone || '+54 9 11 5521 8899',
@@ -129,15 +148,7 @@ const getCombinedLocalProperties = (): Property[] => {
   const customIds = new Set(customFiltered.map((p) => p.id));
   const customRefCodes = new Set(customFiltered.map((p) => p.refCode).filter(Boolean));
 
-  // Merge sample catalog properties that aren't deleted or overridden
-  const sampleFiltered = PROPERTIES_DATA.filter(
-    (p) =>
-      !deletedIds.includes(p.id) &&
-      !customIds.has(p.id) &&
-      (!p.refCode || !customRefCodes.has(p.refCode))
-  );
-
-  const list: Property[] = [...customFiltered, ...sampleFiltered];
+  const list: Property[] = [...customFiltered];
 
   // Sort properties to prevent random jumping
   list.sort((a, b) => {
@@ -189,20 +200,36 @@ export const subscribeToProperties = (
     return onSnapshot(
       q,
       (snapshot) => {
-        const deletedIds = getDeletedPropertyIds();
-        const customLocal = getCustomLocalProperties();
-        const firestorePropsMap = new Map<string, Property>();
-        const firestoreRefCodes = new Set<string>();
+        if (snapshot.empty) {
+          console.log('Firestore collection is empty. Auto-syncing custom local properties...');
+          const customLocal = getCustomLocalProperties();
+          
+          customLocal.forEach((prop) => {
+            const docRef = doc(db, PROPERTIES_COLLECTION, prop.id);
+            setDoc(docRef, {
+              ...prop,
+              updatedAt: Timestamp.now(),
+            }).catch((e) => console.warn('Error auto-seeding property to Firestore:', e));
+          });
 
+          // Deliver local custom properties while Firestore populates
+          onUpdate(customLocal, true);
+          return;
+        }
+
+        const firestorePropsMap = new Map<string, Property>();
         snapshot.docs.forEach((docSnap) => {
           const prop = mapDocToProperty(docSnap.id, docSnap.data());
           firestorePropsMap.set(prop.id, prop);
-          if (prop.refCode) firestoreRefCodes.add(prop.refCode);
         });
 
-        // Auto-sync local custom properties to Firestore if rules now allow and they are not in Firestore yet
+        // Add local custom properties if they aren't in Firestore yet
+        const customLocal = getCustomLocalProperties();
         customLocal.forEach((customProp) => {
-          if (!firestorePropsMap.has(customProp.id) && db) {
+          if (!firestorePropsMap.has(customProp.id)) {
+            firestorePropsMap.set(customProp.id, customProp);
+            
+            // Try to auto-sync it to Firestore since it's missing
             const docRef = doc(db, PROPERTIES_COLLECTION, customProp.id);
             setDoc(docRef, {
               ...customProp,
@@ -211,47 +238,9 @@ export const subscribeToProperties = (
           }
         });
 
-        const mergedProps: Property[] = [];
-        const addedIds = new Set<string>();
-        const addedRefCodes = new Set<string>();
+        const firestoreList: Property[] = Array.from(firestorePropsMap.values());
 
-        // 1. Add custom local properties first so user-uploaded properties are always visible at the top
-        customLocal.forEach((customProp) => {
-          if (!deletedIds.includes(customProp.id)) {
-            mergedProps.push(customProp);
-            addedIds.add(customProp.id);
-            if (customProp.refCode) addedRefCodes.add(customProp.refCode);
-          }
-        });
-
-        // 2. Add Firestore properties that were not deleted and not already added
-        firestorePropsMap.forEach((prop, id) => {
-          if (
-            !deletedIds.includes(id) &&
-            !addedIds.has(id) &&
-            (!prop.refCode || !addedRefCodes.has(prop.refCode))
-          ) {
-            mergedProps.push(prop);
-            addedIds.add(id);
-            if (prop.refCode) addedRefCodes.add(prop.refCode);
-          }
-        });
-
-        // 3. Add default catalog properties (PROPERTIES_DATA) if not deleted or already added
-        PROPERTIES_DATA.forEach((sampleProp) => {
-          if (
-            !deletedIds.includes(sampleProp.id) &&
-            !addedIds.has(sampleProp.id) &&
-            (!sampleProp.refCode || !addedRefCodes.has(sampleProp.refCode))
-          ) {
-            mergedProps.push(sampleProp);
-            addedIds.add(sampleProp.id);
-            if (sampleProp.refCode) addedRefCodes.add(sampleProp.refCode);
-          }
-        });
-
-        // 4. Sort properties to prevent random jumping
-        mergedProps.sort((a, b) => {
+        firestoreList.sort((a, b) => {
           if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
             if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
           } else if (a.displayOrder !== undefined) {
@@ -270,7 +259,7 @@ export const subscribeToProperties = (
           return a.id.localeCompare(b.id);
         });
 
-        onUpdate(mergedProps, !snapshot.empty);
+        onUpdate(firestoreList, true);
       },
       (error) => {
         console.warn('Firestore subscription notice:', error);
@@ -283,6 +272,22 @@ export const subscribeToProperties = (
     onUpdate(getCombinedLocalProperties(), false);
     return () => {};
   }
+};
+
+// Helper to remove undefined fields for Firestore compatibility
+const removeUndefinedValues = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefinedValues);
+  }
+  const cleaned: Record<string, any> = {};
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (val !== undefined) {
+      cleaned[key] = removeUndefinedValues(val);
+    }
+  }
+  return cleaned;
 };
 
 /**
@@ -298,34 +303,30 @@ export const addPropertyToFirestore = async (propertyData: Omit<Property, 'id'>)
     window.dispatchEvent(new Event('mef_local_properties_updated'));
 
     if (db) {
-      try {
-        const querySnapshot = await getDocs(collection(db, PROPERTIES_COLLECTION));
-        for (const docSnap of querySnapshot.docs) {
-          await updateDoc(doc(db, PROPERTIES_COLLECTION, docSnap.id), { featured: false });
-        }
-      } catch (e) {
-        console.warn('Error clearing other featured properties in Firestore:', e);
-      }
-    }
-  }
-
-  if (db) {
-    try {
-      const propertiesRef = collection(db, PROPERTIES_COLLECTION);
-      const cleanData = {
-        ...propertyData,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: Timestamp.now(),
-      };
-      const docRef = await addDoc(propertiesRef, cleanData);
-      docId = docRef.id;
-    } catch (e) {
-      console.warn('Firestore addDoc notice:', e);
+      getDocs(collection(db, PROPERTIES_COLLECTION)).then(querySnapshot => {
+        querySnapshot.docs.forEach(docSnap => {
+          updateDoc(doc(db, PROPERTIES_COLLECTION, docSnap.id), { featured: false }).catch(() => {});
+        });
+      }).catch(e => console.warn('Error clearing other featured properties in Firestore:', e));
     }
   }
 
   const fullProp: Property = { id: docId, ...propertyData };
   saveCustomLocalProperty(fullProp);
+
+  if (db) {
+    const propertiesRef = collection(db, PROPERTIES_COLLECTION);
+    const cleanData = removeUndefinedValues({
+      ...propertyData,
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: Timestamp.now(),
+    });
+    // Don't wait for addDoc, it might hang if db is unconfigured
+    setDoc(doc(db, PROPERTIES_COLLECTION, docId), cleanData).catch(e => {
+      console.warn('Firestore addDoc notice:', e);
+    });
+  }
+
   return docId;
 };
 
@@ -343,29 +344,13 @@ export const updatePropertyInFirestore = async (id: string, propertyData: Partia
     window.dispatchEvent(new Event('mef_local_properties_updated'));
 
     if (db) {
-      try {
-        const querySnapshot = await getDocs(collection(db, PROPERTIES_COLLECTION));
-        for (const docSnap of querySnapshot.docs) {
+      getDocs(collection(db, PROPERTIES_COLLECTION)).then(querySnapshot => {
+        querySnapshot.docs.forEach(docSnap => {
           if (docSnap.id !== id) {
-            await updateDoc(doc(db, PROPERTIES_COLLECTION, docSnap.id), { featured: false });
+             updateDoc(doc(db, PROPERTIES_COLLECTION, docSnap.id), { featured: false }).catch(() => {});
           }
-        }
-      } catch (e) {
-        console.warn('Error clearing other featured properties in Firestore on update:', e);
-      }
-    }
-  }
-
-  if (db) {
-    try {
-      const docRef = doc(db, PROPERTIES_COLLECTION, id);
-      const cleanData = {
-        ...propertyData,
-        updatedAt: Timestamp.now(),
-      };
-      await setDoc(docRef, cleanData, { merge: true });
-    } catch (e) {
-      console.warn('Firestore update notice:', e);
+        });
+      }).catch(e => console.warn('Error clearing other featured properties in Firestore on update:', e));
     }
   }
 
@@ -373,6 +358,17 @@ export const updatePropertyInFirestore = async (id: string, propertyData: Partia
   const existing = currentLocal.find((p) => p.id === id);
   if (existing) {
     saveCustomLocalProperty({ ...existing, ...propertyData } as Property);
+  }
+
+  if (db) {
+    const docRef = doc(db, PROPERTIES_COLLECTION, id);
+    const cleanData = removeUndefinedValues({
+      ...propertyData,
+      updatedAt: Timestamp.now(),
+    });
+    setDoc(docRef, cleanData, { merge: true }).catch(e => {
+      console.warn('Firestore update notice:', e);
+    });
   }
 };
 
@@ -382,12 +378,11 @@ export const updatePropertyInFirestore = async (id: string, propertyData: Partia
 export const deletePropertyFromFirestore = async (id: string) => {
   markPropertyAsDeletedLocal(id);
   removeCustomLocalProperty(id);
-  if (!db) return;
-  try {
+  if (db) {
     const docRef = doc(db, PROPERTIES_COLLECTION, id);
-    await deleteDoc(docRef);
-  } catch (e) {
-    console.warn('Firestore deleteDoc notice:', e);
+    deleteDoc(docRef).catch(e => {
+      console.warn('Firestore deleteDoc notice:', e);
+    });
   }
 };
 
@@ -415,11 +410,8 @@ export const updatePropertiesOrder = async (updates: { id: string; displayOrder:
   try {
     const promises = updates.map(update => {
       const docRef = doc(db, PROPERTIES_COLLECTION, update.id);
-      return updateDoc(docRef, { displayOrder: update.displayOrder, updatedAt: Timestamp.now() }).catch(e => {
-         // Silently ignore NOT_FOUND errors for local-only mock properties
-         if (e.code !== 'not-found') {
-            console.warn(`Failed to update displayOrder for ${update.id}:`, e);
-         }
+      return setDoc(docRef, { displayOrder: update.displayOrder, updatedAt: Timestamp.now() }, { merge: true }).catch(e => {
+        console.warn(`Failed to update displayOrder for ${update.id}:`, e);
       });
     });
     await Promise.all(promises);
@@ -455,6 +447,8 @@ export const importPropertiesBackupJSON = async (rawJSON: string): Promise<numbe
   window.dispatchEvent(new Event('mef_local_properties_updated'));
 
   let count = 0;
+  const firestorePromises: Promise<void>[] = [];
+
   for (const item of items) {
     if (item && item.title) {
       const propToSave: Property = {
@@ -464,20 +458,51 @@ export const importPropertiesBackupJSON = async (rawJSON: string): Promise<numbe
       saveCustomLocalProperty(propToSave);
 
       if (db) {
-        try {
-          const docRef = doc(db, PROPERTIES_COLLECTION, propToSave.id);
-          await setDoc(docRef, {
-            ...propToSave,
-            updatedAt: Timestamp.now(),
-          }, { merge: true });
-        } catch (e) {
+        const docRef = doc(db, PROPERTIES_COLLECTION, propToSave.id);
+        const p = setDoc(docRef, {
+          ...propToSave,
+          updatedAt: Timestamp.now(),
+        }, { merge: true }).catch((e) => {
           console.warn('Firestore sync warning during import:', e);
-        }
+        });
+        firestorePromises.push(p);
       }
       count++;
     }
   }
 
+  // We do not await firestorePromises here because if Firestore is misconfigured
+  // or offline, it could hang and prevent the UI from showing the local success alert.
+  
+  return count;
+};
+
+/**
+ * Explicitly sync all local properties directly into Firebase Firestore.
+ */
+export const syncAllLocalToFirestore = async (): Promise<number> => {
+  const localProps = getCustomLocalProperties();
+  if (localProps.length === 0) return 0;
+  
+  if (!db) {
+    throw new Error('Firebase no está inicializado.');
+  }
+
+  let count = 0;
+  for (const prop of localProps) {
+    const docRef = doc(db, PROPERTIES_COLLECTION, prop.id);
+    const writePromise = setDoc(docRef, {
+      ...prop,
+      updatedAt: Timestamp.now(),
+    }, { merge: true });
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('No se pudo conectar con Firebase. La base de datos no está activa aún.')), 5000)
+    );
+
+    await Promise.race([writePromise, timeoutPromise]);
+    count++;
+  }
   return count;
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw, ChevronLeft, ChevronRight, AlertTriangle, Upload, Plus } from 'lucide-react';
 import { Property, SearchFilters, OperationType, PropertyType } from './types';
 import {
   subscribeToProperties,
@@ -8,6 +8,7 @@ import {
   updatePropertiesOrder,
   exportPropertiesBackupJSON,
   importPropertiesBackupJSON,
+  syncAllLocalToFirestore,
 } from './services/propertyService';
 import { Header } from './components/Header';
 import { HeroSearch } from './components/HeroSearch';
@@ -101,7 +102,14 @@ export default function App() {
 
   // Global UI State
   const [currency, setCurrency] = useState<'USD' | 'ARS'>('USD');
-  const [favorites, setFavorites] = useState<string[]>(['mef-101', 'mef-102']);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('mef_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [valuationModalOpen, setValuationModalOpen] = useState(false);
@@ -224,39 +232,49 @@ export default function App() {
 
   // Reordering functions for Admin
   const handleMovePropertyUp = async (id: string) => {
-    const idx = properties.findIndex((p) => p.id === id);
+    const currentList = filteredProperties;
+    const idx = currentList.findIndex((p) => p.id === id);
     if (idx <= 0) return;
     
-    const newArr = [...properties];
-    const temp = newArr[idx];
-    newArr[idx] = newArr[idx - 1];
-    newArr[idx - 1] = temp;
+    const newFiltered = [...currentList];
+    const temp = newFiltered[idx];
+    newFiltered[idx] = newFiltered[idx - 1];
+    newFiltered[idx - 1] = temp;
     
-    const updatedProperties = newArr.map((item, index) => ({
+    const filteredIds = new Set(newFiltered.map((p) => p.id));
+    const nonFiltered = properties.filter((p) => !filteredIds.has(p.id));
+    
+    const newFullList = [...newFiltered, ...nonFiltered];
+    const updatedProperties = newFullList.map((item, index) => ({
       ...item,
       displayOrder: index + 1,
     }));
     
     setProperties(updatedProperties);
-    await updatePropertiesOrder(updatedProperties.map(p => ({ id: p.id, displayOrder: p.displayOrder! })));
+    await updatePropertiesOrder(updatedProperties.map((p) => ({ id: p.id, displayOrder: p.displayOrder! })));
   };
 
   const handleMovePropertyDown = async (id: string) => {
-    const idx = properties.findIndex((p) => p.id === id);
-    if (idx < 0 || idx >= properties.length - 1) return;
+    const currentList = filteredProperties;
+    const idx = currentList.findIndex((p) => p.id === id);
+    if (idx < 0 || idx >= currentList.length - 1) return;
     
-    const newArr = [...properties];
-    const temp = newArr[idx];
-    newArr[idx] = newArr[idx + 1];
-    newArr[idx + 1] = temp;
+    const newFiltered = [...currentList];
+    const temp = newFiltered[idx];
+    newFiltered[idx] = newFiltered[idx + 1];
+    newFiltered[idx + 1] = temp;
     
-    const updatedProperties = newArr.map((item, index) => ({
+    const filteredIds = new Set(newFiltered.map((p) => p.id));
+    const nonFiltered = properties.filter((p) => !filteredIds.has(p.id));
+    
+    const newFullList = [...newFiltered, ...nonFiltered];
+    const updatedProperties = newFullList.map((item, index) => ({
       ...item,
       displayOrder: index + 1,
     }));
     
     setProperties(updatedProperties);
-    await updatePropertiesOrder(updatedProperties.map(p => ({ id: p.id, displayOrder: p.displayOrder! })));
+    await updatePropertiesOrder(updatedProperties.map((p) => ({ id: p.id, displayOrder: p.displayOrder! })));
   };
 
   // Update filters handler
@@ -270,9 +288,15 @@ export default function App() {
 
   // Toggle Favorite Handler
   const handleToggleFavorite = (id: string) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    setFavorites((prev) => {
+      const updated = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
+      try {
+        localStorage.setItem('mef_favorites', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Could not save favorites to localStorage:', e);
+      }
+      return updated;
+    });
   };
 
   // Scroll to section
@@ -382,6 +406,16 @@ export default function App() {
     return properties.filter((p) => favorites.includes(p.id));
   }, [favorites, properties]);
 
+  const handleSyncToFirebase = async () => {
+    try {
+      const count = await syncAllLocalToFirestore();
+      alert(`¡Se han sincronizado ${count} propiedades a la base de datos de Firebase!`);
+    } catch (err: any) {
+      alert(`Error al sincronizar con Firebase: ${err?.message || 'No se pudo conectar.'}`);
+      throw err;
+    }
+  };
+
   const handleExportBackup = () => {
     exportPropertiesBackupJSON(properties);
   };
@@ -414,6 +448,7 @@ export default function App() {
           totalPropertiesCount={properties.length}
           onExportBackup={handleExportBackup}
           onImportBackup={handleImportBackup}
+          onSyncFirebase={handleSyncToFirebase}
         />
       )}
 
@@ -646,20 +681,54 @@ export default function App() {
 
           {/* PROPERTY DISPLAY (GRID OR MAP) */}
           {filteredProperties.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-3xl border border-zinc-200 p-8 space-y-4">
+            <div className="text-center py-16 bg-white rounded-3xl border border-zinc-200 p-8 space-y-5 shadow-sm max-w-2xl mx-auto my-8">
               <div className="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center mx-auto">
                 <AlertTriangle className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-bold text-zinc-900">
-                No encontramos la propiedad solicitada
+                {properties.length === 0
+                  ? 'No hay propiedades en la base de datos'
+                  : 'No encontramos la propiedad solicitada'}
               </h3>
-              <button
-                onClick={handleResetFilters}
-                className="px-6 py-3 bg-[#48A82D] text-white font-bold rounded-xl text-xs hover:bg-[#3C8F24] transition-all cursor-pointer shadow-md inline-flex items-center gap-2 mt-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Ver todas las propiedades</span>
-              </button>
+              <p className="text-sm text-zinc-600 max-w-md mx-auto">
+                {properties.length === 0
+                  ? 'Las propiedades de ejemplo han sido eliminadas. Puedes importar tu archivo JSON descargado directamente a Firebase Firestore o cargar propiedades nuevas.'
+                  : 'Prueba ajustando los filtros de búsqueda o restableciéndolos para ver el catálogo completo.'}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                {properties.length === 0 ? (
+                  <>
+                    <label className="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 transition-all cursor-pointer shadow-md inline-flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      <span>Subir archivo JSON a Firebase</span>
+                      <input
+                        type="file"
+                        accept=".json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImportBackup(file);
+                        }}
+                      />
+                    </label>
+                    <button
+                      onClick={handleAdminTrigger}
+                      className="px-6 py-3 bg-[#48A82D] text-white font-bold rounded-xl text-xs hover:bg-[#3C8F24] transition-all cursor-pointer shadow-md inline-flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Cargar Propiedad Manualmente</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleResetFilters}
+                    className="px-6 py-3 bg-[#48A82D] text-white font-bold rounded-xl text-xs hover:bg-[#3C8F24] transition-all cursor-pointer shadow-md inline-flex items-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Ver todas las propiedades</span>
+                  </button>
+                )}
+              </div>
             </div>
           ) : viewMode === 'grid' ? (
             <div className="space-y-10">
@@ -676,32 +745,10 @@ export default function App() {
                     onEditProperty={handleEditProperty}
                     onDeleteProperty={handleDeleteProperty}
                     onMoveUpProperty={
-                      filters.sortBy === 'recent' &&
-                      filters.operation === 'TODAS' &&
-                      filters.propertyType === 'TODOS' &&
-                      filters.zone === 'Todas las zonas' &&
-                      filters.refCodeSearch === '' &&
-                      filters.amenities.length === 0 &&
-                      !filters.onlyWithVideo &&
-                      !filters.onlyRecentlyUploaded &&
-                      filters.minPrice === 0 &&
-                      filters.maxPrice >= 2000000
-                        ? handleMovePropertyUp
-                        : undefined
+                      filters.sortBy === 'recent' ? handleMovePropertyUp : undefined
                     }
                     onMoveDownProperty={
-                      filters.sortBy === 'recent' &&
-                      filters.operation === 'TODAS' &&
-                      filters.propertyType === 'TODOS' &&
-                      filters.zone === 'Todas las zonas' &&
-                      filters.refCodeSearch === '' &&
-                      filters.amenities.length === 0 &&
-                      !filters.onlyWithVideo &&
-                      !filters.onlyRecentlyUploaded &&
-                      filters.minPrice === 0 &&
-                      filters.maxPrice >= 2000000
-                        ? handleMovePropertyDown
-                        : undefined
+                      filters.sortBy === 'recent' ? handleMovePropertyDown : undefined
                     }
                   />
                 ))}
@@ -766,7 +813,7 @@ export default function App() {
           )}
         </section>
 
-        {/* 4. BRAND VALUES & ABOUT SECTION */}
+        {/* VENDER / COMPRAR / TASAR - MÓDULO HERRAMIENTAS Y PUBLICACIÓN */}
         <AboutSection />
       </div>
       </main>
