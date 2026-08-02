@@ -221,18 +221,20 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                           (prev) => (prev - 1 + property.images.length) % property.images.length
                         );
                       }}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition-all cursor-pointer shadow-lg"
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white transition-all cursor-pointer shadow-md"
+                      title="Foto anterior"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveImageIndex((prev) => (prev + 1) % property.images.length);
                       }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition-all cursor-pointer shadow-lg"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white transition-all cursor-pointer shadow-md"
+                      title="Siguiente foto"
                     >
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-4 h-4" />
                     </button>
 
                     <div className="absolute bottom-3 right-3 bg-black/75 text-white text-[11px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs">
@@ -249,23 +251,23 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                     <button
                       type="button"
                       onClick={() => scrollThumbnails('left')}
-                      className="p-2 rounded-xl bg-zinc-800 text-white hover:bg-black transition-colors shrink-0 cursor-pointer shadow-sm"
+                      className="p-1 rounded-lg bg-zinc-800 text-white hover:bg-black transition-colors shrink-0 cursor-pointer shadow-xs"
                       title="Fotos anteriores"
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
                   )}
 
                   <div
                     ref={thumbnailRef}
-                    className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar scroll-smooth flex-1"
+                    className="flex gap-2 overflow-x-auto pb-1 no-scrollbar scroll-smooth flex-1 items-center"
                   >
                     {property.images.map((img, idx) => (
                       <button
                         key={idx}
                         onClick={() => setActiveImageIndex(idx)}
                         onDoubleClick={() => setZoomImage(img)}
-                        className={`relative w-[62%] sm:w-24 h-20 sm:h-18 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                        className={`relative w-16 h-16 sm:w-20 sm:h-20 aspect-square rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
                           idx === activeImageIndex
                             ? 'border-[#48A82D] scale-102 shadow-md ring-2 ring-[#48A82D]/20'
                             : 'border-transparent opacity-60 hover:opacity-100'
@@ -289,10 +291,10 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                     <button
                       type="button"
                       onClick={() => scrollThumbnails('right')}
-                      className="p-2 rounded-xl bg-zinc-800 text-white hover:bg-black transition-colors shrink-0 cursor-pointer shadow-sm"
+                      className="p-1 rounded-lg bg-zinc-800 text-white hover:bg-black transition-colors shrink-0 cursor-pointer shadow-xs"
                       title="Siguientes fotos"
                     >
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
