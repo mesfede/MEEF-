@@ -349,7 +349,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       amenities: selectedAmenities,
       agent: {
         name: 'María Eugenia Fernández',
-        phone: '+54 9 11 5521 8899',
+        phone: '+54 9 2284 603168',
         email: 'contacto@mefnegociosinmobiliarios.ar',
         avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
       },

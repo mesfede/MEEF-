@@ -43,7 +43,7 @@ export const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
     const text = encodeURIComponent(
       `Hola MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios, estuve guardando estas propiedades y quisiera más información:\n- ${items}`
     );
-    window.open(`https://wa.me/5491155218899?text=${text}`, '_blank');
+    window.open(`https://wa.me/5492284603168?text=${text}`, '_blank');
   };
 
   return (

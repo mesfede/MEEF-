@@ -13,7 +13,6 @@ interface FooterProps {
 export const Footer: React.FC<FooterProps> = ({
   onSelectOperation,
   onOpenAdminLogin,
-  onReplayIntro,
 }) => {
   return (
     <footer id="contacto" className="bg-gradient-to-b from-[#121212] via-[#181818] to-black text-zinc-300 pt-16 pb-8 border-t-2 border-[#48A82D] relative overflow-hidden">
@@ -86,14 +85,14 @@ export const Footer: React.FC<FooterProps> = ({
 
               <li className="flex items-center">
                 <a
-                  href="tel:+5491155218899"
+                  href="tel:+5492284603168"
                   className="flex items-center gap-3 group transition-colors"
                 >
                   <div className="w-8 h-8 rounded-lg bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-[#48A82D] shrink-0 shadow-xs group-hover:border-[#48A82D] group-hover:bg-[#48A82D]/20 transition-all">
                     <Phone className="w-4 h-4" />
                   </div>
                   <span className="font-bold text-white group-hover:text-[#48A82D] transition-colors">
-                    +54 9 11 5521-8899
+                    +54 9 2284 603168
                   </span>
                 </a>
               </li>
@@ -138,22 +137,14 @@ export const Footer: React.FC<FooterProps> = ({
             {onOpenAdminLogin && (
               <button
                 onClick={onOpenAdminLogin}
-                className="inline-flex items-center text-zinc-600 hover:text-zinc-300 transition-colors cursor-pointer p-0.5 rounded opacity-40 hover:opacity-100 ml-1"
+                className="inline-flex items-center text-zinc-600 hover:text-zinc-300 transition-opacity cursor-pointer p-0.5 rounded opacity-0 hover:opacity-100 focus:opacity-100 ml-1"
                 title="Acceso de Administración"
+                aria-label="Acceso de Administración"
               >
                 <Lock className="w-3.5 h-3.5" />
               </button>
             )}
           </p>
-
-          {onReplayIntro && (
-            <button
-              onClick={onReplayIntro}
-              className="px-3 py-1 bg-zinc-800/80 hover:bg-[#48A82D] hover:text-white text-zinc-400 rounded-full text-xs font-semibold transition-all cursor-pointer border border-zinc-700/60 flex items-center gap-1.5"
-            >
-              <span>Ver Intro de bienvenida</span>
-            </button>
-          )}
         </div>
       </div>
     </footer>

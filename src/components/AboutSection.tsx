@@ -2,7 +2,7 @@ import React from 'react';
 import { MessageCircle, ArrowRight, Instagram, Camera, Globe } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
-  const whatsappUrl = `https://wa.me/5491155218899?text=${encodeURIComponent(
+  const whatsappUrl = `https://wa.me/5492284603168?text=${encodeURIComponent(
     'Hola Maria Eugenia! Quisiera consultarte para vender, comprar o tasar una propiedad.'
   )}`;
 

@@ -123,88 +123,90 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
       </header>
 
-      {/* CONCEPTUAL OVERLAY NAVIGATION MENU */}
+      {/* COMPACT FLOATING NAVIGATION MENU */}
       {menuOpen && (
-        <div className="fixed inset-0 z-[60] bg-zinc-950/20 backdrop-blur-[3px] transition-opacity duration-300 flex justify-end">
-          <div className="w-full max-w-md bg-white h-full shadow-2xl p-6 sm:p-8 flex flex-col justify-between overflow-y-auto animate-slideLeft">
-            
-            {/* Menu Header */}
-            <div>
-              <div className="flex items-center justify-between pb-6 border-b border-zinc-100">
-                <Logo size="sm" variant="dark" />
-                <button
-                  onClick={() => setMenuOpen(false)}
-                  className="p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Primary Operation Quick Filters */}
-              <div className="mt-8">
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleNavClick('catalogo', 'VENTA')}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                      activeOperation === 'VENTA'
-                        ? 'bg-[#EBF7E8] text-[#48A82D] border border-[#48A82D]/30'
-                        : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Home className="w-4 h-4 text-[#48A82D]" />
-                      <span>Venta</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-
-                  <button
-                    onClick={() => handleNavClick('catalogo', 'ALQUILER')}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                      activeOperation === 'ALQUILER'
-                        ? 'bg-[#EBF7E8] text-[#48A82D] border border-[#48A82D]/30'
-                        : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Building2 className="w-4 h-4 text-[#48A82D]" />
-                      <span>Alquiler</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-
-                  <button
-                    onClick={() => handleNavClick('catalogo', 'LOTES')}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                      activeOperation === 'LOTES'
-                        ? 'bg-[#EBF7E8] text-[#48A82D] border border-[#48A82D]/30'
-                        : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <MapPin className="w-4 h-4 text-[#48A82D]" />
-                      <span>Lotes y Terrenos</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-                  
-                  <button
-                    onClick={() => handleNavClick('contacto')}
-                    className="w-full flex items-center justify-between p-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer bg-zinc-50 hover:bg-zinc-100 text-zinc-800"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-[#48A82D]" />
-                      <span>Contacto</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-                </div>
-              </div>
+        <div 
+          onClick={() => setMenuOpen(false)}
+          className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs transition-all duration-300 flex items-start justify-end p-3 sm:p-6"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xs sm:max-w-sm bg-white rounded-2xl shadow-2xl p-5 border border-zinc-200/80 mt-14 sm:mt-16 animate-fadeIn"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-zinc-100">
+              <Logo size="sm" variant="dark" />
+              <button
+                onClick={() => setMenuOpen(false)}
+                className="p-1.5 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors cursor-pointer"
+                aria-label="Cerrar menú"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Menu Footer */}
-            <div className="mt-8 pt-6 border-t border-zinc-100 space-y-3">
-              <p className="text-[11px] text-zinc-400 text-center font-medium">
+            {/* Menu Options */}
+            <div className="mt-3.5 space-y-1.5">
+              <button
+                onClick={() => handleNavClick('catalogo', 'VENTA')}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeOperation === 'VENTA'
+                    ? 'bg-[#EBF7E8] text-[#48A82D] border border-[#48A82D]/30'
+                    : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-800'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Home className="w-4 h-4 text-[#48A82D]" />
+                  <span>Venta</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+              </button>
+
+              <button
+                onClick={() => handleNavClick('catalogo', 'ALQUILER')}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeOperation === 'ALQUILER'
+                    ? 'bg-[#EBF7E8] text-[#48A82D] border border-[#48A82D]/30'
+                    : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-800'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Building2 className="w-4 h-4 text-[#48A82D]" />
+                  <span>Alquiler</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+              </button>
+
+              <button
+                onClick={() => handleNavClick('catalogo', 'LOTES')}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeOperation === 'LOTES'
+                    ? 'bg-[#EBF7E8] text-[#48A82D] border border-[#48A82D]/30'
+                    : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-800'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="w-4 h-4 text-[#48A82D]" />
+                  <span>Lotes y Terrenos</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+              </button>
+
+              <button
+                onClick={() => handleNavClick('contacto')}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-zinc-50 hover:bg-zinc-100 text-zinc-800"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Phone className="w-4 h-4 text-[#48A82D]" />
+                  <span>Contacto</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+              </button>
+            </div>
+
+            {/* Footer text */}
+            <div className="mt-3.5 pt-2.5 border-t border-zinc-100">
+              <p className="text-[10px] text-zinc-400 text-center font-medium">
                 María Eugenia Fernández · Negocios Inmobiliarios
               </p>
             </div>

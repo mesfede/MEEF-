@@ -195,7 +195,7 @@ export const RecentSpotlight: React.FC<RecentSpotlightProps> = ({
               <ArrowUpRight className="w-4 h-4" />
             </button>
             <a
-              href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20${encodeURIComponent(spotlightProperty.title)}`}
+              href={`https://wa.me/5492284603168?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20${encodeURIComponent(spotlightProperty.title)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white border border-zinc-600 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center cursor-pointer"

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Calculator, CheckCircle2, Building2, MapPin, Phone, ArrowUpRight } from 'lucide-react';
-import { OperationType, PropertyType, ValuationRequest } from '../types';
+import { X, Calculator } from 'lucide-react';
+import { PropertyType, ValuationRequest } from '../types';
 
 interface TasacionModalProps {
   isOpen: boolean;
@@ -15,28 +15,33 @@ export const TasacionModal: React.FC<TasacionModalProps> = ({ isOpen, onClose })
     propertyType: 'Casa',
     operationType: 'VENTA',
     address: '',
-    cityZone: 'Nordelta',
+    cityZone: 'Gral. La Madrid',
     totalArea: '',
-    bedrooms: '3',
+    bedrooms: '',
     comments: '',
   });
-
-  const [submitted, setSubmitted] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-  };
+    if (!formData.fullName.trim() || !formData.phone.trim()) {
+      alert('Por favor complete Nombre Completo y Teléfono de Contacto.');
+      return;
+    }
 
-  const whatsappMessage = encodeURIComponent(
-    `Hola MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios, solicito tasación profesional:\n- Nombre: ${formData.fullName}\n- Tipo: ${formData.propertyType} (${formData.operationType})\n- Ubicación: ${formData.address}, ${formData.cityZone}\n- Superficie: ${formData.totalArea} m2\n- Tel: ${formData.phone}`
-  );
+    const message = encodeURIComponent(
+      `Hola MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios, solicito tasación para:\n- Tipo de Inmueble: ${formData.propertyType}\n- Ubicación: ${formData.address || 'No especificada'}, ${formData.cityZone}\n- Nombre: ${formData.fullName}\n- Teléfono: ${formData.phone}${formData.comments ? `\n- Observaciones: ${formData.comments}` : ''}`
+    );
+
+    const waUrl = `https://wa.me/5492284603168?text=${message}`;
+    window.open(waUrl, '_blank');
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
-      <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-zinc-200">
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-zinc-200">
         {/* Header */}
         <div className="bg-[#181818] text-white p-5 flex items-center justify-between border-b border-[#48A82D]">
           <div className="flex items-center gap-2.5">
@@ -44,7 +49,7 @@ export const TasacionModal: React.FC<TasacionModalProps> = ({ isOpen, onClose })
               <Calculator className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Tasaciones Profesionales</h2>
+              <h2 className="text-xl font-bold">Tasaciones</h2>
               <p className="text-xs text-[#48A82D] font-medium">MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios</p>
             </div>
           </div>
@@ -58,86 +63,39 @@ export const TasacionModal: React.FC<TasacionModalProps> = ({ isOpen, onClose })
 
         {/* Content Body */}
         <div className="p-6">
-          {submitted ? (
-            <div className="text-center py-8 space-y-4">
-              <div className="w-16 h-16 bg-[#48A82D]/10 text-[#48A82D] rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-10 h-10" />
-              </div>
-              <h3 className="text-2xl font-bold text-zinc-900">
-                ¡Solicitud de Tasación Recibida!
-              </h3>
-              <p className="text-sm text-zinc-600 max-w-md mx-auto">
-                Un tasador matriculado de MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios analizará las características de tu inmueble y te contactará en menos de 24 hs.
-              </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <p className="text-xs text-zinc-600">
+              Completá los datos a continuación para solicitar la tasación de tu inmueble.
+            </p>
 
-              <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
-                <a
-                  href={`https://wa.me/5491155218899?text=${whatsappMessage}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-3 bg-[#48A82D] hover:bg-[#3C8F24] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+              {/* Tipo de Inmueble */}
+              <div>
+                <label className="text-xs font-bold text-zinc-700 mb-1 block">Tipo de Inmueble</label>
+                <select
+                  value={formData.propertyType}
+                  onChange={(e) =>
+                    setFormData({ ...formData, propertyType: e.target.value as PropertyType })
+                  }
+                  className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-[#48A82D]"
                 >
-                  <span>Enviar por WhatsApp Directo</span>
-                  <ArrowUpRight className="w-4 h-4" />
-                </a>
-                <button
-                  onClick={onClose}
-                  className="px-5 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
-                >
-                  Cerrar Ventana
-                </button>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <p className="text-xs text-zinc-600">
-                Completá el formulario para obtener una tasación real de mercado para venta o alquiler de tu casa, departamento o lote.
-              </p>
-
-              {/* Operation & Property Type */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-zinc-700 mb-1 block">Tipo de Operación</label>
-                  <select
-                    value={formData.operationType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, operationType: e.target.value as OperationType })
-                    }
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-[#48A82D]"
-                  >
-                    <option value="VENTA">Quiero Vender</option>
-                    <option value="ALQUILER">Quiero Alquilar</option>
-                    <option value="LOTES">Vender Lote / Terreno</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-zinc-700 mb-1 block">Tipo de Inmueble</label>
-                  <select
-                    value={formData.propertyType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, propertyType: e.target.value as PropertyType })
-                    }
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-[#48A82D]"
-                  >
-                    <option value="Casa">Casa</option>
-                    <option value="Departamento">Departamento</option>
-                    <option value="Lote / Terreno">Lote / Terreno</option>
-                    <option value="Barrio Cerrado">Barrio Cerrado</option>
-                    <option value="PH">PH</option>
-                    <option value="Local / Oficina">Local / Oficina</option>
-                  </select>
-                </div>
+                  <option value="Casa">Casa</option>
+                  <option value="Departamento">Departamento</option>
+                  <option value="Lote / Terreno">Lote / Terreno</option>
+                  <option value="Campo / Quinta">Campo / Quinta</option>
+                  <option value="Barrio Cerrado">Barrio Cerrado</option>
+                  <option value="PH">PH</option>
+                  <option value="Local / Oficina">Local / Oficina</option>
+                  <option value="Otros">Otros</option>
+                </select>
               </div>
 
-              {/* Location Address */}
+              {/* Location & Address */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-zinc-700 mb-1 block">Dirección o Barrio</label>
+                  <label className="text-xs font-bold text-zinc-700 mb-1 block">Dirección o Referencia</label>
                   <input
                     type="text"
-                    required
-                    placeholder="Ej: Los Castores Lote 45"
+                    placeholder="Ej: San Martín 450"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-[#48A82D]"
@@ -147,8 +105,7 @@ export const TasacionModal: React.FC<TasacionModalProps> = ({ isOpen, onClose })
                   <label className="text-xs font-bold text-zinc-700 mb-1 block">Zona / Localidad</label>
                   <input
                     type="text"
-                    required
-                    placeholder="Ej: Nordelta, Tigre, San Isidro"
+                    placeholder="Ej: Gral. La Madrid"
                     value={formData.cityZone}
                     onChange={(e) => setFormData({ ...formData, cityZone: e.target.value })}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-[#48A82D]"
@@ -156,49 +113,29 @@ export const TasacionModal: React.FC<TasacionModalProps> = ({ isOpen, onClose })
                 </div>
               </div>
 
-              {/* Area & Rooms */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-zinc-700 mb-1 block">Superficie Aprox (m²)</label>
-                  <input
-                    type="number"
-                    placeholder="Ej: 250 m2"
-                    value={formData.totalArea}
-                    onChange={(e) => setFormData({ ...formData, totalArea: e.target.value })}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-[#48A82D]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-zinc-700 mb-1 block">Dormitorios / Ambientes</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: 3 dorms + dependencia"
-                    value={formData.bedrooms}
-                    onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-[#48A82D]"
-                  />
-                </div>
-              </div>
-
-              {/* Contact Information */}
+              {/* Mandatory Contact Information */}
               <div className="pt-2 border-t border-zinc-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-zinc-700 mb-1 block">Nombre Completo</label>
+                  <label className="text-xs font-bold text-zinc-700 mb-1 block">
+                    Nombre Completo <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     required
-                    placeholder="Tu Nombre"
+                    placeholder="Tu Nombre completo"
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-[#48A82D]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-zinc-700 mb-1 block">Teléfono de Contacto</label>
+                  <label className="text-xs font-bold text-zinc-700 mb-1 block">
+                    Teléfono de Contacto <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="tel"
                     required
-                    placeholder="Tu Teléfono"
+                    placeholder="Tu Teléfono de contacto"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-[#48A82D]"
@@ -210,7 +147,7 @@ export const TasacionModal: React.FC<TasacionModalProps> = ({ isOpen, onClose })
                 <label className="text-xs font-bold text-zinc-700 mb-1 block">Observaciones adicionales</label>
                 <textarea
                   rows={2}
-                  placeholder="Detalles de la propiedad, estado, año de construcción..."
+                  placeholder="Detalles sobre el estado del inmueble o consulta..."
                   value={formData.comments}
                   onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
                   className="w-full bg-zinc-50 border border-zinc-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-[#48A82D]"
@@ -221,10 +158,9 @@ export const TasacionModal: React.FC<TasacionModalProps> = ({ isOpen, onClose })
                 type="submit"
                 className="w-full bg-[#48A82D] hover:bg-[#3C8F24] text-white py-3.5 rounded-xl font-bold text-sm shadow-md transition-all cursor-pointer"
               >
-                Solicitar Tasación Profesional
+                Solicitar Tasación
               </button>
             </form>
-          )}
         </div>
       </div>
     </div>

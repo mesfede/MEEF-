@@ -37,6 +37,7 @@ export default function App() {
   // Hero Video Ref & Autoplay Guarantee
   const heroVideoRef = useRef<HTMLVideoElement>(null);
   const [scrollY, setScrollY] = useState(0);
+  const [isAtFooter, setIsAtFooter] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,6 +45,22 @@ export default function App() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // IntersectionObserver to detect when user reaches the footer
+  useEffect(() => {
+    const footerEl = document.getElementById('contacto');
+    if (!footerEl) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsAtFooter(entry.isIntersecting);
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(footerEl);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -832,7 +849,6 @@ export default function App() {
         }}
         onOpenValuationModal={() => setValuationModalOpen(true)}
         onOpenAdminLogin={handleAdminTrigger}
-        onReplayIntro={() => setShowIntro(true)}
       />
 
       {/* INTRO SCREEN ANIMATION */}
@@ -845,13 +861,13 @@ export default function App() {
       {/* FLOATING WHATSAPP CTA BUTTON */}
       <div 
         className={`fixed bottom-5 left-0 right-0 z-30 pointer-events-none flex justify-end max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 transition-opacity duration-300 ${
-          isMenuOpen || filterModalOpen || valuationModalOpen || favoritesDrawerOpen || googleMapsModalOpen || selectedProperty || adminLoginModalOpen || adminPropertyModalOpen || scrollY <= 50
+          isMenuOpen || filterModalOpen || valuationModalOpen || favoritesDrawerOpen || googleMapsModalOpen || selectedProperty || adminLoginModalOpen || adminPropertyModalOpen || scrollY <= 50 || isAtFooter
             ? 'opacity-0 pointer-events-none'
             : 'opacity-30 hover:opacity-100'
         }`}
       >
         <a
-          href="https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20hacer%20una%20consulta."
+          href="https://wa.me/5492284603168?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20hacer%20una%20consulta."
           target="_blank"
           rel="noopener noreferrer"
           className="pointer-events-auto bg-[#25D366] hover:bg-[#1DA851] text-white p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center border border-white/80 group"

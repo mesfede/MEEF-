@@ -363,7 +363,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             </button>
 
             <a
-              href={`https://wa.me/5491155218899?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20${encodeURIComponent(property.title)}`}
+              href={`https://wa.me/5492284603168?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20${encodeURIComponent(property.title)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-2 bg-[#48A82D] hover:bg-[#3C8F24] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"

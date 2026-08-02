@@ -1,0 +1,19 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 72' width='480' height='144'>
+  <g fill='#2C8B7D'>
+    <!-- U -->
+    <path d='M 0 0 H 18 V 44 C 18 51 21 54 27 54 C 33 54 36 51 36 44 V 30 H 54 V 44 C 54 60 42 72 27 72 C 12 72 0 60 0 44 Z' />
+    
+    <!-- N -->
+    <path d='M 58 0 H 76 L 102 72 H 84 Z' />
+    <path d='M 102 0 H 120 V 72 H 102 Z' />
+    
+    <!-- K -->
+    <path d='M 126 0 H 144 L 172 72 H 154 Z' />
+    <path d='M 148 36 L 184 0 H 202 L 166 36 L 202 72 H 184 Z' />
+    
+    <!-- E -->
+    <path d='M 190 0 H 236 V 16 H 190 Z' />
+    <path d='M 190 28 H 236 V 44 H 190 Z' />
+    <path d='M 190 56 H 236 V 72 H 190 Z' />
+  </g>
+</svg>

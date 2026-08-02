@@ -132,7 +132,7 @@ const mapDocToProperty = (id: string, data: any): Property => {
     lotFeatures: data.lotFeatures || undefined,
     agent: {
       name: data.agent?.name || 'María Eugenia Fernández',
-      phone: data.agent?.phone || '+54 9 11 5521 8899',
+      phone: data.agent?.phone || '+54 9 2284 603168',
       email: data.agent?.email || 'contacto@mefnegociosinmobiliarios.ar',
       avatar: data.agent?.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
     },
