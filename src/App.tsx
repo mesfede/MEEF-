@@ -545,8 +545,8 @@ export default function App() {
       <main className="flex-1 relative bg-zinc-50 overflow-hidden">
         {/* Subtle Map Watermark Background */}
         <div 
-          className="absolute inset-0 pointer-events-none opacity-[0.09] bg-cover bg-center bg-fixed mix-blend-multiply filter contrast-125 grayscale"
-          style={{ backgroundImage: "url('/map-bg.jpg')" }}
+          className="absolute inset-0 pointer-events-none opacity-20 bg-cover bg-center bg-fixed mix-blend-multiply filter contrast-125 grayscale"
+          style={{ backgroundImage: `url('${getAssetUrl('/map-bg.jpg')}')` }}
         />
         <div className="relative z-10">
         {/* 3. MAIN PROPERTIES LISTING SECTION */}
