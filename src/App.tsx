@@ -29,6 +29,7 @@ import { AdminBar } from './components/AdminBar';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
 import { IntroScreen } from './components/IntroScreen';
+import mapBgImage from './assets/map-bg.jpg';
 
 export default function App() {
   // Intro screen state
@@ -545,8 +546,8 @@ export default function App() {
       <main className="flex-1 relative bg-zinc-50 overflow-hidden">
         {/* Subtle Map Watermark Background */}
         <div 
-          className="absolute inset-0 pointer-events-none opacity-20 bg-cover bg-center bg-fixed mix-blend-multiply filter contrast-125 grayscale"
-          style={{ backgroundImage: `url('${getAssetUrl('/map-bg.jpg')}')` }}
+          className="absolute inset-0 pointer-events-none opacity-30 bg-cover bg-center bg-fixed mix-blend-multiply filter contrast-125 grayscale"
+          style={{ backgroundImage: `url('${mapBgImage}')` }}
         />
         <div className="relative z-10">
         {/* 3. MAIN PROPERTIES LISTING SECTION */}
