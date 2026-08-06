@@ -540,12 +540,12 @@ export default function App() {
       </div>
 
       <main className="flex-1 relative z-0 bg-zinc-50 overflow-hidden">
-        {/* Watermark Map Background - Embedded Base64 Data URI guaranteed to render on Hostinger */}
-        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-70 sm:opacity-80">
+        {/* Responsive Watermark Map Blueprint Background - Full width, fixed viewport, crisp & non-repeating */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-20 sm:opacity-25 mix-blend-multiply">
           <img 
             src={MAP_BG_DATA_URL} 
-            alt="Mapa de fondo" 
-            className="w-full h-full object-cover object-center mix-blend-multiply opacity-90" 
+            alt="Plano de mapa de fondo" 
+            className="w-full h-full object-cover object-center" 
           />
         </div>
         <div className="relative z-10">
