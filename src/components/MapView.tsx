@@ -59,7 +59,7 @@ export const MapView: React.FC<MapViewProps> = ({
               Módulo de Búsqueda por Google Maps
             </span>
             <span className="text-[11px] text-zinc-400">
-              General La Madrid, Laprida, Coronel Suárez y la zona ({filteredMapProperties.length} ubicadas)
+              General La Madrid y la zona ({filteredMapProperties.length} ubicadas)
             </span>
           </div>
         </div>

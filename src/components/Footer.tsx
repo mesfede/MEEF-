@@ -26,7 +26,7 @@ export const Footer: React.FC<FooterProps> = ({
             <Logo variant="light" size="md" />
 
             <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-md pt-1">
-              Gestión inmobiliaria integral, venta y alquiler de viviendas, tasaciones profesionales y comercialización de lotes, quintas y campos en General La Madrid, Laprida y la zona.
+              Gestión inmobiliaria integral, venta y alquiler de viviendas, tasaciones profesionales y comercialización de lotes, quintas y campos en General La Madrid y la zona.
             </p>
           </div>
 
@@ -79,7 +79,7 @@ export const Footer: React.FC<FooterProps> = ({
                   <MapPin className="w-4 h-4" />
                 </div>
                 <span className="text-zinc-300 leading-snug">
-                  Sede Central en General La Madrid (Bs. As.) • Atención en Laprida y la zona.
+                  Sede Central en General La Madrid (Bs. As.) • Atención en General La Madrid y la Zona.
                 </span>
               </li>
 
