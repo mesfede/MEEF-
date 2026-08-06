@@ -540,13 +540,18 @@ export default function App() {
       </div>
 
       <main className="flex-1 relative bg-zinc-50 overflow-hidden">
-        {/* Map Watermark Background - strictly contained within main catalog section */}
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-80 sm:opacity-85 bg-cover bg-center bg-no-repeat z-0"
-          style={{ 
-            backgroundImage: `url(${mapBgImage})`
-          }}
-        />
+        {/* Map Watermark Background - HTML img element for 100% reliable rendering on hosting */}
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-80 sm:opacity-90">
+          <img 
+            src={mapBgImage} 
+            alt="Plano de mapa de fondo" 
+            className="w-full h-full object-cover object-center mix-blend-multiply" 
+            onError={(e) => {
+              // Fallback to root public path if asset bundle path differs
+              e.currentTarget.src = '/map-bg.jpg';
+            }}
+          />
+        </div>
         <div className="relative z-10">
         {/* 3. MAIN PROPERTIES LISTING SECTION */}
         <section id="propiedades" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
