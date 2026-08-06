@@ -540,8 +540,8 @@ export default function App() {
       </div>
 
       <main className="flex-1 relative z-0 bg-zinc-50 overflow-hidden">
-        {/* Responsive Watermark Map Blueprint Background - Full width, fixed viewport, crisp & non-repeating */}
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-20 sm:opacity-25 mix-blend-multiply">
+        {/* Subtle, Crisp Watermark Map Blueprint Background - Low opacity so it is gentle and doesn't interfere with reading */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-10 sm:opacity-12 mix-blend-multiply">
           <img 
             src={MAP_BG_DATA_URL} 
             alt="Plano de mapa de fondo" 
