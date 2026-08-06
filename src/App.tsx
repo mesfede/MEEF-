@@ -28,7 +28,6 @@ import { RecentSpotlight } from './components/RecentSpotlight';
 import { AdminBar } from './components/AdminBar';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
-import mapBgImage from './assets/map-bg.jpg';
 
 export default function App() {
   // Hero Video Ref & Autoplay Guarantee
@@ -544,7 +543,7 @@ export default function App() {
         <div 
           className="absolute inset-0 pointer-events-none opacity-60 sm:opacity-75 bg-cover bg-center bg-no-repeat mix-blend-multiply z-0"
           style={{ 
-            backgroundImage: `url(${mapBgImage})`,
+            backgroundImage: "url('/map-bg.jpg')",
             backgroundAttachment: 'fixed'
           }}
         />
