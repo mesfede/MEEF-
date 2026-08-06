@@ -28,6 +28,7 @@ import { RecentSpotlight } from './components/RecentSpotlight';
 import { AdminBar } from './components/AdminBar';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
+import { SEOHead } from './components/SEOHead';
 import { MAP_BG_DATA_URL } from './assets/mapBgData';
 
 export default function App() {
@@ -459,6 +460,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-800 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Dynamic SEO & Head Tags Manager */}
+      <SEOHead
+        selectedProperty={selectedProperty}
+        filters={filters}
+        totalProperties={properties.length}
+      />
+
       {/* ADMIN TOP TOOLBAR (Visible when logged in) */}
       {isAdminLoggedIn && (
         <AdminBar

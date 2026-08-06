@@ -90,6 +90,52 @@ La descripción debe estar redactada en español fluido, destacar los puntos fue
   }
 });
 
+// SEO Endpoints for Search Engine Crawlers & Google Indexing
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain');
+  res.send(
+`User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://mefnegociosinmobiliarios.ar/sitemap.xml`
+  );
+});
+
+app.get('/sitemap.xml', (_req, res) => {
+  res.type('application/xml');
+  const today = new Date().toISOString().split('T')[0];
+  res.send(
+`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://mefnegociosinmobiliarios.ar/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://mefnegociosinmobiliarios.ar/?operacion=VENTA</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://mefnegociosinmobiliarios.ar/?operacion=ALQUILER</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://mefnegociosinmobiliarios.ar/?operacion=LOTES</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>`
+  );
+});
+
 const distPath = path.join(process.cwd(), 'dist');
 
 // Build frontend if dist/index.html doesn't exist
