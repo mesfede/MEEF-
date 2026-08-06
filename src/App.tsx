@@ -28,6 +28,7 @@ import { RecentSpotlight } from './components/RecentSpotlight';
 import { AdminBar } from './components/AdminBar';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
+import mapBgImage from './assets/map-bg.jpg';
 
 export default function App() {
   // Hero Video Ref & Autoplay Guarantee
@@ -539,12 +540,11 @@ export default function App() {
       </div>
 
       <main className="flex-1 relative bg-zinc-50 overflow-hidden">
-        {/* Fixed Map Watermark Background - strictly contained within main section */}
+        {/* Map Watermark Background - strictly contained within main catalog section */}
         <div 
-          className="absolute inset-0 pointer-events-none opacity-60 sm:opacity-75 bg-cover bg-center bg-no-repeat mix-blend-multiply z-0"
+          className="absolute inset-0 pointer-events-none opacity-80 sm:opacity-85 bg-cover bg-center bg-no-repeat z-0"
           style={{ 
-            backgroundImage: "url('/map-bg.jpg')",
-            backgroundAttachment: 'fixed'
+            backgroundImage: `url(${mapBgImage})`
           }}
         />
         <div className="relative z-10">
