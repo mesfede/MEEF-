@@ -474,7 +474,7 @@ export default function App() {
       )}
 
       {/* HERO SECTION WITH BACKGROUND DRONE VIDEO SPANNING HEADER & SEARCH */}
-      <div id="hero" className={`relative bg-[#121212] text-white overflow-hidden min-h-[100dvh] flex flex-col justify-between ${isAdminLoggedIn ? 'pt-[52px]' : ''}`}>
+      <div id="hero" className={`relative z-10 bg-[#121212] text-white overflow-hidden min-h-[100dvh] flex flex-col justify-between ${isAdminLoggedIn ? 'pt-[52px]' : ''}`}>
         {/* Full-span Background Drone Video Layer */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-zinc-950">
           <img
@@ -539,15 +539,14 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 relative bg-zinc-50 overflow-hidden">
-        {/* Map Watermark Background - HTML img element for 100% reliable rendering on hosting */}
-        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-80 sm:opacity-90">
+      <main className="flex-1 relative z-0 bg-zinc-50 overflow-hidden">
+        {/* Fixed Watermark Map Background - covered by Hero (z-10), fixed behind Catalog */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-35 sm:opacity-45">
           <img 
             src={mapBgImage} 
             alt="Plano de mapa de fondo" 
             className="w-full h-full object-cover object-center mix-blend-multiply" 
             onError={(e) => {
-              // Fallback to root public path if asset bundle path differs
               e.currentTarget.src = '/map-bg.jpg';
             }}
           />
