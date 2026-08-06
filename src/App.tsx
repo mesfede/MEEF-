@@ -28,7 +28,7 @@ import { RecentSpotlight } from './components/RecentSpotlight';
 import { AdminBar } from './components/AdminBar';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
-import mapBgImage from './assets/map-bg.jpg';
+import { MAP_BG_DATA_URL } from './assets/mapBgData';
 
 export default function App() {
   // Hero Video Ref & Autoplay Guarantee
@@ -539,14 +539,15 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 relative z-0 bg-zinc-50">
-        {/* Watermark Map Background - strictly contained within catalog section & fixed on scroll */}
-        <div 
-          className="absolute inset-0 pointer-events-none z-0 opacity-75 sm:opacity-85 mix-blend-multiply bg-cover bg-center bg-no-repeat bg-fixed"
-          style={{ 
-            backgroundImage: `url(${mapBgImage}), url('/map-bg.jpg')`
-          }}
-        />
+      <main className="flex-1 relative z-0 bg-zinc-50 overflow-hidden">
+        {/* Watermark Map Background - Embedded Base64 Data URI guaranteed to render on Hostinger */}
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-70 sm:opacity-80">
+          <img 
+            src={MAP_BG_DATA_URL} 
+            alt="Mapa de fondo" 
+            className="w-full h-full object-cover object-center mix-blend-multiply opacity-90" 
+          />
+        </div>
         <div className="relative z-10">
         {/* 3. MAIN PROPERTIES LISTING SECTION */}
         <section id="propiedades" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
