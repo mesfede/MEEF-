@@ -539,18 +539,14 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 relative z-0 bg-zinc-50 overflow-hidden">
-        {/* Fixed Watermark Map Background - covered by Hero (z-10), fixed behind Catalog */}
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-35 sm:opacity-45">
-          <img 
-            src={mapBgImage} 
-            alt="Plano de mapa de fondo" 
-            className="w-full h-full object-cover object-center mix-blend-multiply" 
-            onError={(e) => {
-              e.currentTarget.src = '/map-bg.jpg';
-            }}
-          />
-        </div>
+      <main className="flex-1 relative z-0 bg-zinc-50">
+        {/* Watermark Map Background - strictly contained within catalog section & fixed on scroll */}
+        <div 
+          className="absolute inset-0 pointer-events-none z-0 opacity-75 sm:opacity-85 mix-blend-multiply bg-cover bg-center bg-no-repeat bg-fixed"
+          style={{ 
+            backgroundImage: `url(${mapBgImage}), url('/map-bg.jpg')`
+          }}
+        />
         <div className="relative z-10">
         {/* 3. MAIN PROPERTIES LISTING SECTION */}
         <section id="propiedades" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
