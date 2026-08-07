@@ -548,8 +548,8 @@ export default function App() {
       </div>
 
       <main className="flex-1 relative z-0 bg-zinc-50 overflow-hidden">
-        {/* Subtle, Crisp Watermark Map Blueprint Background - Low opacity so it is gentle and doesn't interfere with reading */}
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-10 sm:opacity-12 mix-blend-multiply">
+        {/* Subtle, Crisp Watermark Map Blueprint Background - Extra transparent (20% less visible) so it stays ultra-soft behind cards */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-[0.08] sm:opacity-[0.09] mix-blend-multiply">
           <img 
             src={MAP_BG_DATA_URL} 
             alt="Plano de mapa de fondo" 
