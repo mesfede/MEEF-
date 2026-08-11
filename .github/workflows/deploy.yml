@@ -27,6 +27,9 @@ jobs:
         env:
           VITE_BASE_PATH: /
 
+      - name: Remove Node.js server bundle for static hosting
+        run: rm -f dist/server.cjs dist/server.cjs.map
+
       - name: Sync files via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
