@@ -30,7 +30,7 @@ jobs:
       - name: Sync files via FTP (Hostinger)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER || 'mefnegociosinmobiliarios.com.ar' }}
+          server: ${{ secrets.FTP_SERVER || 'ftp.mefnegociosinmobiliarios.ar' }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
