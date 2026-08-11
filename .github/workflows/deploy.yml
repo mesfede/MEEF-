@@ -27,14 +27,15 @@ jobs:
         env:
           VITE_BASE_PATH: /
 
-      - name: Sync files via FTP
+      - name: Sync files via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          protocol: ftps
           port: 21
+          security-mode: loose
           local-dir: ./dist/
           server-dir: ${{ secrets.FTP_REMOTE_PATH || '/public_html/' }}
 
