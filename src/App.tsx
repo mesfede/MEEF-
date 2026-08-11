@@ -138,14 +138,27 @@ export default function App() {
   const [favoritesDrawerOpen, setFavoritesDrawerOpen] = useState(false);
   const [googleMapsModalOpen, setGoogleMapsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Realtime subscription to Firebase Firestore
   useEffect(() => {
     const unsubscribe = subscribeToProperties((liveProperties, fromFirebase) => {
       setProperties(liveProperties);
       setIsFirebaseConnected(fromFirebase);
+      if (fromFirebase || liveProperties.length > 0) {
+        setIsLoading(false);
+      }
     });
-    return () => unsubscribe();
+
+    // Security timeout to stop loading if Firestore takes too long
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
   }, []);
 
   // Admin Auth Handlers
@@ -711,7 +724,30 @@ export default function App() {
           )}
 
           {/* PROPERTY DISPLAY (GRID OR MAP) */}
-          {filteredProperties.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm animate-pulse">
+                    <div className="aspect-[4/3] bg-zinc-100 w-full" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex justify-between">
+                        <div className="h-4 bg-zinc-100 rounded-lg w-1/3" />
+                        <div className="h-4 bg-zinc-100 rounded-lg w-1/4" />
+                      </div>
+                      <div className="h-6 bg-zinc-100 rounded-lg w-3/4" />
+                      <div className="h-4 bg-zinc-100 rounded-lg w-1/2" />
+                      <div className="pt-4 border-t border-zinc-100 flex justify-between gap-4">
+                        <div className="h-4 bg-zinc-100 rounded-lg w-1/4" />
+                        <div className="h-4 bg-zinc-100 rounded-lg w-1/4" />
+                        <div className="h-4 bg-zinc-100 rounded-lg w-1/4" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : filteredProperties.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-3xl border border-zinc-200 p-8 space-y-5 shadow-sm max-w-2xl mx-auto my-8">
               <div className="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center mx-auto">
                 <AlertTriangle className="w-8 h-8" />
