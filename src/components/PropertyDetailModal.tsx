@@ -10,7 +10,7 @@ const getInstagramEmbedUrl = (url?: string): string | null => {
 import React, { useState, useRef, useEffect } from 'react';
 import { X, MapPin, Maximize, Bed, Bath, Car, Phone, Mail, CheckCircle2, ChevronLeft, ChevronRight, Share2, Heart, Trees, Video, ExternalLink, Star, FileText, Plus, Minus, Home } from 'lucide-react';
 import { Property } from '../types';
-import { getAssetUrl } from '../lib/utils';
+import { getAssetUrl, formatLocationName, formatFullAddress } from '../lib/utils';
 
 
 interface PropertyDetailModalProps {
@@ -309,7 +309,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                   <div className="flex items-center gap-1.5 text-xs font-bold text-[#48A82D] uppercase tracking-wider">
                     <span>{property.type}</span>
                     <span className="text-zinc-400 font-normal">/</span>
-                    <span>{property.location.zone}</span>
+                    <span>{formatLocationName(property.location.zone, property.location.city)}</span>
                   </div>
                 </div>
 
@@ -322,7 +322,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 <p className="text-xs text-zinc-600 flex items-center gap-1.5 font-medium">
                   <MapPin className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
                   <span>
-                    {property.location.address}, {property.location.zone}, {property.location.city}
+                    {formatFullAddress(property.location.address, property.location.zone, property.location.city)}
                   </span>
                 </p>
 
@@ -627,7 +627,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                     <span>Ubicación de la Propiedad</span>
                   </h3>
                   <p className="text-xs text-zinc-600 font-medium">
-                    {property.location.address}, {property.location.zone}, {property.location.city}
+                    {formatFullAddress(property.location.address, property.location.zone, property.location.city)}
                   </p>
                 </div>
                 <a
@@ -686,7 +686,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
         >
           <div className="w-full flex items-center justify-between text-white max-w-6xl">
             <div className="text-xs font-bold text-zinc-300">
-              <span className="text-[#48A82D]">{property.title}</span> — {property.location.zone}
+              <span className="text-[#48A82D]">{property.title}</span> — {formatLocationName(property.location.zone, property.location.city)}
             </div>
             <button
               onClick={() => setZoomImage(null)}

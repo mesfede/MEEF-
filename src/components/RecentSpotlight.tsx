@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Home, Play, ArrowUpRight, MapPin, Maximize, Bed, Bath, Car, Video } from 'lucide-react';
 import { Property } from '../types';
-import { getAssetUrl } from '../lib/utils';
+import { getAssetUrl, formatLocationName, formatFullAddress } from '../lib/utils';
 
 
 interface RecentSpotlightProps {
@@ -120,7 +120,7 @@ export const RecentSpotlight: React.FC<RecentSpotlightProps> = ({
           <div className="relative z-10 p-3 mt-auto flex items-center justify-between text-xs font-semibold text-white">
             <span className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
-              <span>{spotlightProperty.location.zone}</span>
+              <span>{formatLocationName(spotlightProperty.location.zone, spotlightProperty.location.city)}</span>
             </span>
           </div>
         </div>
@@ -147,7 +147,7 @@ export const RecentSpotlight: React.FC<RecentSpotlightProps> = ({
               {/* 3. Address & location */}
               <p className="text-xs text-zinc-400 flex items-center gap-1 mt-2">
                 <MapPin className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
-                <span>{spotlightProperty.location.address}, {spotlightProperty.location.zone}, {spotlightProperty.location.city}</span>
+                <span>{formatFullAddress(spotlightProperty.location.address, spotlightProperty.location.zone, spotlightProperty.location.city)}</span>
               </p>
             </div>
 

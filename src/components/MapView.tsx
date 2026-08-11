@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Navigation, ExternalLink, Search, Globe, Building2 } from 'lucide-react';
 import { Property } from '../types';
-import { getAssetUrl } from '../lib/utils';
+import { getAssetUrl, formatLocationName, formatFullAddress } from '../lib/utils';
 
 
 interface MapViewProps {
@@ -136,7 +136,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   <div className="flex flex-col text-left min-w-0">
                     <div className="flex items-center gap-1">
                       <span className="text-[9px] font-black uppercase text-[#48A82D] tracking-wider truncate">
-                        {p.location.zone}
+                        {formatLocationName(p.location.zone, p.location.city)}
                       </span>
                     </div>
                     <span className="text-xs font-bold truncate leading-snug">
@@ -188,7 +188,7 @@ export const MapView: React.FC<MapViewProps> = ({
               </h4>
               <p className="text-xs text-zinc-600 truncate flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3 h-3 text-[#48A82D] shrink-0" />
-                <span>{activeProp.location.address}, {activeProp.location.zone}</span>
+                <span>{formatFullAddress(activeProp.location.address, activeProp.location.zone, activeProp.location.city)}</span>
               </p>
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-200">
                 <span className="text-sm font-extrabold text-[#48A82D]">
@@ -250,7 +250,7 @@ export const MapView: React.FC<MapViewProps> = ({
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-[#48A82D] uppercase">{p.operation}</span>
-                  <span className="text-[9px] text-zinc-400 font-medium">{p.location.zone}</span>
+                  <span className="text-[9px] text-zinc-400 font-medium">{formatLocationName(p.location.zone, p.location.city)}</span>
                 </div>
                 <h5 className="text-xs font-bold truncate mt-0.5">{p.title}</h5>
                 <p className="text-[11px] font-bold text-[#48A82D] mt-0.5">{displayPrice(p)}</p>

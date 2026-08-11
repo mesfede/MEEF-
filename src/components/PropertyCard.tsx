@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, MapPin, Maximize, Bed, Bath, Car, Trees, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Star, Flame, Instagram, Edit3, Trash2, ArrowUp, ArrowDown, Home } from 'lucide-react';
 import { Property } from '../types';
-import { getAssetUrl } from '../lib/utils';
+import { getAssetUrl, formatLocationName } from '../lib/utils';
 
 
 interface PropertyCardProps {
@@ -226,7 +226,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           {/* Location */}
           <div className="flex items-center gap-1 text-zinc-500 text-xs mt-1.5">
             <MapPin className="w-3.5 h-3.5 text-[#48A82D] shrink-0" />
-            <span className="truncate">{property.location.zone}, {property.location.city}</span>
+            <span className="truncate">{formatLocationName(property.location.zone, property.location.city)}</span>
           </div>
         </div>
 
