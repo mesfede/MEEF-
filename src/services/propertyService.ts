@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Property } from '../types';
+import { parseSafeDate } from '../lib/utils';
 
 const PROPERTIES_COLLECTION = 'properties';
 const DELETED_PROPERTIES_KEY = 'mef_deleted_property_ids';
@@ -141,7 +142,7 @@ const mapDocToProperty = (id: string, data: any): Property => {
   };
 };
 
-const getCombinedLocalProperties = (): Property[] => {
+export const getCombinedLocalProperties = (): Property[] => {
   const deletedIds = getDeletedPropertyIds();
   const customLocal = getCustomLocalProperties();
 
@@ -164,8 +165,8 @@ const getCombinedLocalProperties = (): Property[] => {
     if (a.isRecentlyUploaded && !b.isRecentlyUploaded) return -1;
     if (!a.isRecentlyUploaded && b.isRecentlyUploaded) return 1;
     
-    const dateA = new Date(a.createdAt || '2000-01-01').getTime();
-    const dateB = new Date(b.createdAt || '2000-01-01').getTime();
+    const dateA = parseSafeDate(a.createdAt || '2000-01-01');
+    const dateB = parseSafeDate(b.createdAt || '2000-01-01');
     if (dateA !== dateB) return dateB - dateA;
     
     return a.id.localeCompare(b.id);
@@ -255,8 +256,8 @@ export const subscribeToProperties = (
           if (a.isRecentlyUploaded && !b.isRecentlyUploaded) return -1;
           if (!a.isRecentlyUploaded && b.isRecentlyUploaded) return 1;
           
-          const dateA = new Date(a.createdAt || '2000-01-01').getTime();
-          const dateB = new Date(b.createdAt || '2000-01-01').getTime();
+          const dateA = parseSafeDate(a.createdAt || '2000-01-01');
+          const dateB = parseSafeDate(b.createdAt || '2000-01-01');
           if (dateA !== dateB) return dateB - dateA;
           
           return a.id.localeCompare(b.id);
@@ -296,21 +297,38 @@ const removeUndefinedValues = (obj: any): any => {
 /**
  * Add a new property to Firestore (and fallback to localStorage).
  */
-export const addPropertyToFirestore = async (propertyData: Omit<Property, 'id'>): Promise<string> => {
+export const addPropertyToFirestore = async (propertyData: Omit<Property, 'id'>, existingProperties?: Property[]): Promise<string> => {
   let docId = `mef-${Date.now()}`;
 
   // Find the minimum displayOrder among existing properties to make this one appear at the top
-  let minDisplayOrder = 1000;
+  let minDisplayOrder = 1;
+  let hasFoundDisplayOrder = false;
   
-  // Check local custom properties
-  const localProps = getCustomLocalProperties();
-  localProps.forEach((p) => {
-    if (p.displayOrder !== undefined && p.displayOrder < minDisplayOrder) {
-      minDisplayOrder = p.displayOrder;
-    }
-  });
+  if (existingProperties && existingProperties.length > 0) {
+    existingProperties.forEach((p) => {
+      if (p.displayOrder !== undefined) {
+        if (!hasFoundDisplayOrder || p.displayOrder < minDisplayOrder) {
+          minDisplayOrder = p.displayOrder;
+          hasFoundDisplayOrder = true;
+        }
+      }
+    });
+  }
 
-  if (db) {
+  // If we didn't have existingProperties or none had displayOrder, check local custom properties
+  if (!hasFoundDisplayOrder) {
+    const localProps = getCustomLocalProperties();
+    localProps.forEach((p) => {
+      if (p.displayOrder !== undefined) {
+        if (!hasFoundDisplayOrder || p.displayOrder < minDisplayOrder) {
+          minDisplayOrder = p.displayOrder;
+          hasFoundDisplayOrder = true;
+        }
+      }
+    });
+  }
+
+  if (db && !hasFoundDisplayOrder) {
     try {
       const q = query(
         collection(db, PROPERTIES_COLLECTION),
@@ -320,8 +338,9 @@ export const addPropertyToFirestore = async (propertyData: Omit<Property, 'id'>)
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         const firstDoc = querySnapshot.docs[0].data();
-        if (firstDoc.displayOrder !== undefined && firstDoc.displayOrder < minDisplayOrder) {
+        if (firstDoc.displayOrder !== undefined) {
           minDisplayOrder = firstDoc.displayOrder;
+          hasFoundDisplayOrder = true;
         }
       }
     } catch (e) {
@@ -329,7 +348,9 @@ export const addPropertyToFirestore = async (propertyData: Omit<Property, 'id'>)
     }
   }
 
-  const newDisplayOrder = minDisplayOrder - 1;
+  // If no display order exists anywhere, default the new one to 1.
+  // Otherwise, set it to minDisplayOrder - 1 so it is strictly smaller than the minimum, pushing it to the very top.
+  const newDisplayOrder = hasFoundDisplayOrder ? minDisplayOrder - 1 : 1;
 
   if (propertyData.featured) {
     const currentLocal = getCustomLocalProperties();

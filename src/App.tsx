@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw, ChevronLeft, ChevronRight, AlertTriangle, Upload, Plus } from 'lucide-react';
 import { Property, SearchFilters, OperationType, PropertyType } from './types';
-import { getAssetUrl } from './lib/utils';
+import { getAssetUrl, parseSafeDate } from './lib/utils';
 
 import {
   subscribeToProperties,
@@ -12,6 +12,7 @@ import {
   exportPropertiesBackupJSON,
   importPropertiesBackupJSON,
   syncAllLocalToFirestore,
+  getCombinedLocalProperties,
 } from './services/propertyService';
 import { Header } from './components/Header';
 import { HeroSearch } from './components/HeroSearch';
@@ -98,8 +99,14 @@ export default function App() {
     }
   }, []);
 
-  // Global Realtime Properties State from Firebase
-  const [properties, setProperties] = useState<Property[]>([]);
+  // Global Realtime Properties State from Firebase - initialized with local properties to show "al toque" (0ms lag)
+  const [properties, setProperties] = useState<Property[]>(() => {
+    try {
+      return getCombinedLocalProperties();
+    } catch {
+      return [];
+    }
+  });
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -138,7 +145,13 @@ export default function App() {
   const [favoritesDrawerOpen, setFavoritesDrawerOpen] = useState(false);
   const [googleMapsModalOpen, setGoogleMapsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      return getCombinedLocalProperties().length === 0;
+    } catch {
+      return true;
+    }
+  });
 
   // Realtime subscription to Firebase Firestore
   useEffect(() => {
@@ -412,9 +425,9 @@ export default function App() {
         const orderB = b.displayOrder !== undefined ? b.displayOrder : 999999;
         if (orderA !== orderB) return orderA - orderB;
       }
-      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      const diff = (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+      const timeA = parseSafeDate(a.createdAt);
+      const timeB = parseSafeDate(b.createdAt);
+      const diff = timeB - timeA;
       if (diff !== 0) return diff;
       const isCustomA = !a.id.startsWith('mef-10');
       const isCustomB = !b.id.startsWith('mef-10');
@@ -972,6 +985,7 @@ export default function App() {
         onClose={() => setAdminPropertyModalOpen(false)}
         propertyToEdit={propertyToEdit}
         onSavedSuccess={handlePropertySaved}
+        existingProperties={properties}
       />
     </div>
   );

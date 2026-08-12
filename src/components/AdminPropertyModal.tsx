@@ -35,6 +35,7 @@ interface AdminPropertyModalProps {
   onClose: () => void;
   propertyToEdit?: Property | null;
   onSavedSuccess?: (savedProperty?: Property) => void;
+  existingProperties?: Property[];
 }
 
 const ALL_AMENITIES_STORAGE_KEY = 'mef_all_amenities';
@@ -89,6 +90,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
   onClose,
   propertyToEdit,
   onSavedSuccess,
+  existingProperties,
 }) => {
   // Form states
   const [refCode, setRefCode] = useState('');
@@ -363,7 +365,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
         await updatePropertyInFirestore(targetId, propertyPayload);
         setSuccessMsg('¡Propiedad actualizada exitosamente!');
       } else {
-        const newDocId = await addPropertyToFirestore(propertyPayload);
+        const newDocId = await addPropertyToFirestore(propertyPayload, existingProperties);
         targetId = newDocId;
         setSuccessMsg('¡Nueva propiedad guardada exitosamente!');
       }
