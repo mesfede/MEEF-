@@ -127,6 +127,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               <option value="Departamento">Departamento</option>
               <option value="Duplex">Duplex</option>
               <option value="Local / Oficina">Local / Oficina</option>
+              <option value="Local + Casa">Local + Casa</option>
               <option value="Galpón">Galpón</option>
               <option value="Lote / Terreno">Lote / Terreno</option>
             </select>

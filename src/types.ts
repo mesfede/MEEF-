@@ -8,6 +8,7 @@ export type PropertyType =
   | 'Barrio Cerrado' 
   | 'PH' 
   | 'Local / Oficina' 
+  | 'Local + Casa'
   | 'Galpón'
   | 'Quinta / Campo';
 

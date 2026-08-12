@@ -9,6 +9,7 @@ import {
   getDocs,
   query,
   orderBy,
+  limit,
   Timestamp,
   writeBatch,
 } from 'firebase/firestore';
@@ -200,6 +201,8 @@ export const subscribeToProperties = (
     return onSnapshot(
       q,
       (snapshot) => {
+        const isFromFirebase = !snapshot.metadata.fromCache;
+
         if (snapshot.empty) {
           console.log('Firestore collection is empty. Auto-syncing custom local properties...');
           const customLocal = getCustomLocalProperties();
@@ -213,7 +216,7 @@ export const subscribeToProperties = (
           });
 
           // Deliver local custom properties while Firestore populates
-          onUpdate(customLocal, true);
+          onUpdate(customLocal, isFromFirebase);
           return;
         }
 
@@ -259,7 +262,7 @@ export const subscribeToProperties = (
           return a.id.localeCompare(b.id);
         });
 
-        onUpdate(firestoreList, true);
+        onUpdate(firestoreList, isFromFirebase);
       },
       (error) => {
         console.warn('Firestore subscription notice:', error);
@@ -296,6 +299,38 @@ const removeUndefinedValues = (obj: any): any => {
 export const addPropertyToFirestore = async (propertyData: Omit<Property, 'id'>): Promise<string> => {
   let docId = `mef-${Date.now()}`;
 
+  // Find the minimum displayOrder among existing properties to make this one appear at the top
+  let minDisplayOrder = 1000;
+  
+  // Check local custom properties
+  const localProps = getCustomLocalProperties();
+  localProps.forEach((p) => {
+    if (p.displayOrder !== undefined && p.displayOrder < minDisplayOrder) {
+      minDisplayOrder = p.displayOrder;
+    }
+  });
+
+  if (db) {
+    try {
+      const q = query(
+        collection(db, PROPERTIES_COLLECTION),
+        orderBy('displayOrder', 'asc'),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const firstDoc = querySnapshot.docs[0].data();
+        if (firstDoc.displayOrder !== undefined && firstDoc.displayOrder < minDisplayOrder) {
+          minDisplayOrder = firstDoc.displayOrder;
+        }
+      }
+    } catch (e) {
+      console.warn('Error getting min displayOrder from Firestore:', e);
+    }
+  }
+
+  const newDisplayOrder = minDisplayOrder - 1;
+
   if (propertyData.featured) {
     const currentLocal = getCustomLocalProperties();
     const updatedLocal = currentLocal.map((p) => ({ ...p, featured: false }));
@@ -311,13 +346,17 @@ export const addPropertyToFirestore = async (propertyData: Omit<Property, 'id'>)
     }
   }
 
-  const fullProp: Property = { id: docId, ...propertyData };
+  const fullProp: Property = { 
+    id: docId, 
+    ...propertyData, 
+    displayOrder: propertyData.displayOrder !== undefined ? propertyData.displayOrder : newDisplayOrder 
+  };
   saveCustomLocalProperty(fullProp);
 
   if (db) {
-    const propertiesRef = collection(db, PROPERTIES_COLLECTION);
     const cleanData = removeUndefinedValues({
       ...propertyData,
+      displayOrder: propertyData.displayOrder !== undefined ? propertyData.displayOrder : newDisplayOrder,
       createdAt: new Date().toISOString().split('T')[0],
       updatedAt: Timestamp.now(),
     });

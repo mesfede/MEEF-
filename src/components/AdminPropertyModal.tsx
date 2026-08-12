@@ -465,6 +465,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                   <option value="Barrio Cerrado">Barrio Cerrado</option>
                   <option value="PH">PH</option>
                   <option value="Local / Oficina">Local / Oficina</option>
+                  <option value="Local + Casa">Local + Casa</option>
                 </select>
               </div>
             </div>

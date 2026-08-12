@@ -85,6 +85,7 @@ export const TasacionModal: React.FC<TasacionModalProps> = ({ isOpen, onClose })
                   <option value="Barrio Cerrado">Barrio Cerrado</option>
                   <option value="PH">PH</option>
                   <option value="Local / Oficina">Local / Oficina</option>
+                  <option value="Local + Casa">Local + Casa</option>
                   <option value="Otros">Otros</option>
                 </select>
               </div>

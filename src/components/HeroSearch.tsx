@@ -79,6 +79,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     { value: 'Departamento', label: 'Departamento' },
     { value: 'Duplex', label: 'Duplex' },
     { value: 'Local / Oficina', label: 'Local / Oficina' },
+    { value: 'Local + Casa', label: 'Local + Casa' },
     { value: 'Galpón', label: 'Galpón' },
     { value: 'Lote / Terreno', label: 'Lote / Terreno' },
   ];

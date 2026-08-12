@@ -510,7 +510,7 @@ export default function App() {
             loop
             muted
             playsInline
-            preload="metadata"
+            preload="auto"
             style={{
               filter: videoFilter,
               willChange: 'filter, transform',
