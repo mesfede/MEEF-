@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { LocationPickerMap } from './LocationPickerMap';
 import {
   X,
@@ -29,6 +29,52 @@ import {
 import { Property, OperationType, PropertyType } from '../types';
 import { ZONES_LIST } from '../data/properties';
 import { addPropertyToFirestore, updatePropertyInFirestore, saveCustomLocalProperty } from '../services/propertyService';
+
+export const normalizeImageUrl = (rawUrl: string): string => {
+  if (!rawUrl) return '';
+  let url = rawUrl.trim();
+  // Strip surrounding quotes, commas, brackets, trailing spaces
+  url = url.replace(/^['"<\[\s]+|['">\]\s,;]+$/g, '');
+
+  if (!url) return '';
+
+  // Data URLs & Blobs
+  if (url.startsWith('data:image/') || url.startsWith('blob:')) {
+    return url;
+  }
+
+  // Google Drive URLs:
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
+                     url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/i) ||
+                     url.match(/drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/i);
+  if (driveMatch && driveMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
+  }
+
+  // Dropbox links
+  if (url.includes('dropbox.com')) {
+    return url.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace('?dl=0', '').replace('&dl=0', '');
+  }
+
+  // Imgur page links
+  const imgurMatch = url.match(/imgur\.com\/([a-zA-Z0-9]+)$/i);
+  if (imgurMatch && imgurMatch[1]) {
+    return `https://i.imgur.com/${imgurMatch[1]}.jpg`;
+  }
+
+  // Handle www. or //
+  if (url.startsWith('www.')) {
+    url = 'https://' + url;
+  } else if (url.startsWith('//')) {
+    url = 'https:' + url;
+  } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    if (url.includes('.') && url.includes('/')) {
+      url = 'https://' + url;
+    }
+  }
+
+  return url;
+};
 
 interface AdminPropertyModalProps {
   isOpen: boolean;
@@ -120,6 +166,9 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
 
   // Media URLs & Photo management
   const [imageUrlsText, setImageUrlsText] = useState('');
+  const [singleUrlInput, setSingleUrlInput] = useState('');
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [mainImageIndex, setMainImageIndex] = useState<number>(0);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoType, setVideoType] = useState<'mp4' | 'youtube' | 'instagram'>('mp4');
@@ -280,11 +329,66 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
     amenity.toLowerCase().includes(amenitySearchQuery.toLowerCase())
   );
 
-  // Helper to parse image URLs from textarea
-  const parsedImageUrls = imageUrlsText
-    .split(/\r?\n/)
-    .map((url) => url.trim())
-    .filter((url) => url.length > 5 && (url.startsWith('http://') || url.startsWith('https://')));
+  // Helper to parse & normalize image URLs from textarea, files, or single links
+  const parsedImageUrls = useMemo(() => {
+    if (!imageUrlsText) return [];
+    const items = imageUrlsText.split(/[\r\n,;]+/);
+    const result: string[] = [];
+    const seen = new Set<string>();
+
+    for (const raw of items) {
+      const normalized = normalizeImageUrl(raw);
+      if (normalized && normalized.length > 5 && !seen.has(normalized)) {
+        seen.add(normalized);
+        result.push(normalized);
+      }
+    }
+    return result;
+  }, [imageUrlsText]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingFiles(true);
+    const fileArray = Array.from(files);
+    const filePromises = fileArray.map((file) => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          resolve((event.target?.result as string) || '');
+        };
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(filePromises)
+      .then((dataUrls) => {
+        const validUrls = dataUrls.filter((d) => d && (d.startsWith('data:image/') || d.startsWith('http')));
+        if (validUrls.length > 0) {
+          const currentText = imageUrlsText.trim();
+          const appended = currentText ? `${currentText}\n${validUrls.join('\n')}` : validUrls.join('\n');
+          setImageUrlsText(appended);
+        }
+      })
+      .finally(() => {
+        setIsUploadingFiles(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      });
+  };
+
+  const handleAddSingleUrl = () => {
+    const normalized = normalizeImageUrl(singleUrlInput);
+    if (normalized) {
+      const currentText = imageUrlsText.trim();
+      const appended = currentText ? `${currentText}\n${normalized}` : normalized;
+      setImageUrlsText(appended);
+      setSingleUrlInput('');
+    } else {
+      alert('Por favor ingrese un enlace o URL válido de imagen.');
+    }
+  };
 
   const handleRemoveImageByIndex = (idxToRemove: number) => {
     const remaining = parsedImageUrls.filter((_, i) => i !== idxToRemove);
@@ -308,9 +412,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
 
     // Reorder images so selected main image is at index 0 (featured / cover photo)
     let orderedImages = [...parsedImageUrls];
-    if (orderedImages.length === 0) {
-      orderedImages = ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'];
-    } else if (mainImageIndex >= 0 && mainImageIndex < orderedImages.length) {
+    if (orderedImages.length > 0 && mainImageIndex >= 0 && mainImageIndex < orderedImages.length) {
       const chosenMain = orderedImages[mainImageIndex];
       const rest = orderedImages.filter((_, idx) => idx !== mainImageIndex);
       orderedImages = [chosenMain, ...rest];
@@ -690,7 +792,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
             </div>
           </div>
 
-          {/* SECTION 4: MULTIMEDIA URLS (IMAGES & VIDEO & PORTADA SELECTION) */}
+          {/* SECTION 4: MULTIMEDIA URLS & DIRECT FILE UPLOADER */}
           <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 sm:p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-200 pb-2 gap-2">
               <h4 className="text-xs font-bold text-zinc-800 uppercase tracking-wider flex items-center gap-2">
@@ -702,16 +804,78 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
               </span>
             </div>
 
+            {/* BUTTON TO SELECT FILES FROM DEVICE & SINGLE LINK INPUT */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option A: Device File Upload */}
+              <div className="bg-white border-2 border-dashed border-[#48A82D]/40 hover:border-[#48A82D] rounded-xl p-3.5 flex flex-col items-center justify-center text-center transition-all">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <div className="w-10 h-10 rounded-full bg-[#48A82D]/10 text-[#48A82D] flex items-center justify-center mb-2">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingFiles}
+                  className="px-4 py-2 bg-[#48A82D] hover:bg-[#3d9125] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  <span>{isUploadingFiles ? 'Cargando fotos...' : '📁 Seleccionar Fotos desde PC / Celular'}</span>
+                </button>
+                <p className="text-[10px] text-zinc-500 mt-1.5 font-medium">
+                  Seleccione una o varias imágenes directamente de su dispositivo (JPG, PNG, WEBP).
+                </p>
+              </div>
+
+              {/* Option B: Add Single Link */}
+              <div className="bg-white border border-zinc-200 rounded-xl p-3.5 flex flex-col justify-between space-y-2">
+                <label className="block text-[11px] font-bold text-zinc-700 uppercase">
+                  Añadir Enlace / URL Individual de Foto
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={singleUrlInput}
+                    onChange={(e) => setSingleUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddSingleUrl();
+                      }
+                    }}
+                    placeholder="Ej: https://miservidor.com/foto1.jpg o Drive"
+                    className="flex-1 bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-1.5 text-xs font-mono text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddSingleUrl}
+                    className="px-3 py-1.5 bg-[#181818] hover:bg-[#282828] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Añadir</span>
+                  </button>
+                </div>
+                <p className="text-[10px] text-zinc-500 font-medium">
+                  Soporta enlaces directos, Google Drive, Dropbox, Imgur, etc.
+                </p>
+              </div>
+            </div>
+
             {/* Bulk URLs Textarea */}
             <div>
               <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
-                Pegar URLs de Fotografías (Una URL por línea) *
+                O Pegar Múltiples URLs (Una por línea o separadas por comas)
               </label>
               <textarea
-                rows={4}
+                rows={3}
                 value={imageUrlsText}
                 onChange={(e) => setImageUrlsText(e.target.value)}
-                placeholder={`https://images.unsplash.com/photo-1600596542815-ffad4c1539a9...\nhttps://images.unsplash.com/photo-1600585154340...`}
+                placeholder={`https://miservidor.com/foto1.jpg\nhttps://drive.google.com/file/d/XYZ/view\nhttps://miservidor.com/foto2.jpg`}
                 className="w-full bg-white border border-zinc-300 rounded-xl p-3 text-xs font-mono text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#48A82D]"
               />
               <p className="text-[11px] text-zinc-500 mt-1 flex items-center gap-1">
@@ -749,9 +913,19 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               const img = e.currentTarget;
-                              if (img.dataset.hasError) return; img.dataset.hasError = 'true'; img.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80';
+                              img.style.display = 'none';
+                              const parent = img.parentElement;
+                              if (parent) {
+                                const errDiv = parent.querySelector('.img-err-placeholder');
+                                if (errDiv) (errDiv as HTMLElement).style.display = 'flex';
+                              }
                             }}
                           />
+                          <div className="img-err-placeholder hidden absolute inset-0 bg-zinc-100 flex-col items-center justify-center p-2 text-center text-zinc-500">
+                            <AlertCircle className="w-5 h-5 text-amber-500 mb-1" />
+                            <span className="text-[10px] font-bold">Error de enlace</span>
+                            <span className="text-[9px]">Verifica la URL</span>
+                          </div>
 
                           {/* Badge Principal */}
                           {isMain ? (
@@ -769,7 +943,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleRemoveImageByIndex(index)}
-                            className="absolute top-1.5 right-1.5 p-1 bg-red-600/90 hover:bg-red-700 text-white rounded-md transition-colors shadow-sm cursor-pointer"
+                            className="absolute top-1.5 right-1.5 p-1 bg-red-600/90 hover:bg-red-700 text-white rounded-md transition-colors shadow-sm cursor-pointer z-10"
                             title="Quitar foto"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
