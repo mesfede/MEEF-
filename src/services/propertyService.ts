@@ -120,9 +120,7 @@ const mapDocToProperty = (id: string, data: any): Property => {
     bathrooms: Number(data.bathrooms) || 0,
     garages: Number(data.garages) || 0,
     description: data.description || '',
-    images: Array.isArray(data.images) && data.images.length > 0
-      ? data.images
-      : ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'],
+    images: Array.isArray(data.images) ? data.images : [],
     featured: Boolean(data.featured),
     isNewDevelopment: Boolean(data.isNewDevelopment),
     isRecentlyUploaded: Boolean(data.isRecentlyUploaded),
