@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Home, Play, ArrowUpRight, MapPin, Maximize, Bed, Bath, Car, Video } from 'lucide-react';
+import { Home, Play, ArrowUpRight, MapPin, Maximize, Bed, Bath, Car, Video, Instagram } from 'lucide-react';
 import { Property } from '../types';
 import { getAssetUrl, formatLocationName, formatFullAddress } from '../lib/utils';
 
@@ -110,9 +110,9 @@ export const RecentSpotlight: React.FC<RecentSpotlightProps> = ({
 
             {/* 3. Video tag conditionally rendered */}
             {hasVideoOrReel && (
-              <span className="bg-rose-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                <Video className="w-3.5 h-3.5 text-white shrink-0" />
-                <span>Video</span>
+              <span className="bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                <Instagram className="w-3.5 h-3.5 text-white shrink-0" />
+                <span>VIDEO IG</span>
               </span>
             )}
           </div>

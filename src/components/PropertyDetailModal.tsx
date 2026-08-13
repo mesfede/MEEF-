@@ -8,9 +8,10 @@ const getInstagramEmbedUrl = (url?: string): string | null => {
   return null;
 };
 import React, { useState, useRef, useEffect } from 'react';
-import { X, MapPin, Maximize, Bed, Bath, Car, Phone, Mail, CheckCircle2, ChevronLeft, ChevronRight, Share2, Heart, Trees, Video, ExternalLink, Star, FileText, Plus, Minus, Home } from 'lucide-react';
+import { X, MapPin, Maximize, Bed, Bath, Car, Phone, Mail, CheckCircle2, ChevronLeft, ChevronRight, Share2, Heart, Trees, Video, ExternalLink, Star, FileText, Plus, Minus, Home, Instagram } from 'lucide-react';
 import { Property } from '../types';
 import { getAssetUrl, formatLocationName, formatFullAddress } from '../lib/utils';
+import { PropertyImagePlaceholder } from './PropertyCard';
 
 
 interface PropertyDetailModalProps {
@@ -36,6 +37,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<'info' | 'video' | 'amenities' | 'location'>(
     property?.videoUrl || property?.instagramUrl ? 'video' : 'info'
   );
+  const [failedImageIndexes, setFailedImageIndexes] = useState<Record<number, boolean>>({});
   const [copiedLink, setCopiedLink] = useState(false);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
   const [mapZoom, setMapZoom] = useState<number>(15);
@@ -54,7 +56,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
   if (!property) return null;
 
-  const currentPhotoUrl = property.images[activeImageIndex] || property.images[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80';
+  const currentPhotoUrl = property.images[activeImageIndex] || property.images[0] || '';
 
   const scrollThumbnails = (direction: 'left' | 'right') => {
     if (thumbnailRef.current) {
@@ -160,12 +162,18 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 className="relative aspect-4/3 sm:aspect-4/3 lg:aspect-4/3 min-h-[280px] sm:min-h-[340px] lg:min-h-[380px] w-full rounded-2xl overflow-hidden bg-zinc-900 group shadow-md border border-zinc-200 cursor-zoom-in"
                 title="Haga doble clic para ampliar a pantalla completa"
               >
-                <img
-                  src={currentPhotoUrl || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'}
-                  alt={property.title}
-                  className="w-full h-full object-cover transition-all duration-300 group-hover:scale-102"
-                  onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
-                />
+                {!property.images || property.images.length === 0 || failedImageIndexes[activeImageIndex] ? (
+                  <PropertyImagePlaceholder size="lg" />
+                ) : (
+                  <img
+                    src={property.images[activeImageIndex]}
+                    alt={property.title}
+                    className="w-full h-full object-cover transition-all duration-300 group-hover:scale-102"
+                    onError={() => {
+                      setFailedImageIndexes((prev) => ({ ...prev, [activeImageIndex]: true }));
+                    }}
+                  />
+                )}
 
                 {/* Subtle Logo Watermark Overlay */}
                 <div className="absolute bottom-4 right-4 pointer-events-none opacity-[0.4] z-10 w-16 h-16">
@@ -208,6 +216,12 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                     <span className="bg-amber-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
                       <Home className="w-3.5 h-3.5 text-black shrink-0" />
                       <span>Propiedad destacada</span>
+                    </span>
+                  )}
+                  {(property.videoUrl || property.instagramUrl) && (
+                    <span className="bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                      <Instagram className="w-3.5 h-3.5 text-white shrink-0" />
+                      <span>VIDEO IG</span>
                     </span>
                   )}
                 </div>
@@ -274,12 +288,18 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                         }`}
                         title={`Foto ${idx + 1}`}
                       >
-                        <img
-                          src={img}
-                          alt={`Foto ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
-                        />
+                        {failedImageIndexes[idx] ? (
+                          <PropertyImagePlaceholder size="sm" />
+                        ) : (
+                          <img
+                            src={img}
+                            alt={`Foto ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={() => {
+                              setFailedImageIndexes((prev) => ({ ...prev, [idx]: true }));
+                            }}
+                          />
+                        )}
                         <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1 rounded">
                           {idx + 1}
                         </span>
@@ -699,13 +719,24 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
           <div className="relative max-w-6xl max-h-[85vh] flex items-center justify-center overflow-hidden my-auto p-2">
             <div className="relative inline-flex items-center justify-center max-w-full max-h-[82vh]">
-              <img
-                src={zoomImage}
-                alt="Foto ampliada"
-                className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
-                onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
-                onClick={(e) => e.stopPropagation()}
-              />
+              {failedImageIndexes[property.images.indexOf(zoomImage || '')] ? (
+                <div className="w-[480px] max-w-full h-[320px] rounded-xl overflow-hidden">
+                  <PropertyImagePlaceholder size="lg" />
+                </div>
+              ) : (
+                <img
+                  src={zoomImage || ''}
+                  alt="Foto ampliada"
+                  className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
+                  onError={() => {
+                    const idx = property.images.indexOf(zoomImage || '');
+                    if (idx !== -1) {
+                      setFailedImageIndexes((prev) => ({ ...prev, [idx]: true }));
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
               {/* Subtle Logo Watermark Overlay for Zoom */}
               <div className="absolute bottom-6 right-6 pointer-events-none opacity-[0.4] z-10 w-24 h-24">
                 <img src={getAssetUrl('/logo-white.png')} alt="" className="w-full h-full object-contain drop-shadow-lg" />

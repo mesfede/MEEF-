@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw, ChevronLeft, ChevronRight, AlertTriangle, Upload, Plus } from 'lucide-react';
+import { LayoutGrid, Map, SlidersHorizontal, ArrowUpDown, Phone, MessageSquare, Calculator, Heart, Sparkles, Building2, Trees, DollarSign, RotateCcw, ChevronLeft, ChevronRight, AlertTriangle, Upload, Plus, Loader2 } from 'lucide-react';
 import { Property, SearchFilters, OperationType, PropertyType } from './types';
 import { getAssetUrl, parseSafeDate } from './lib/utils';
 
@@ -15,6 +15,7 @@ import {
   getCombinedLocalProperties,
 } from './services/propertyService';
 import { Header } from './components/Header';
+import { Logo } from './components/Logo';
 import { HeroSearch } from './components/HeroSearch';
 import { PropertyCard } from './components/PropertyCard';
 import { PropertyDetailModal } from './components/PropertyDetailModal';
@@ -166,7 +167,7 @@ export default function App() {
     // Security timeout to stop loading if Firestore takes too long
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 6000);
 
     return () => {
       unsubscribe();
@@ -493,6 +494,21 @@ export default function App() {
         totalProperties={properties.length}
       />
 
+      {/* Elegant Full-Screen Brand Preloader Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-white z-[99999] flex flex-col items-center justify-center p-6 select-none animate-fade-in">
+          <div className="flex flex-col items-center max-w-sm text-center space-y-6">
+            <Logo size="xl" variant="color" />
+            <div className="flex items-center gap-3 bg-zinc-50 border border-zinc-100 px-4 py-2 rounded-2xl shadow-xs">
+              <Loader2 className="w-5 h-5 text-[#48A82D] animate-spin" />
+              <span className="text-sm font-bold text-zinc-600 tracking-wide">
+                Cargando propiedades...
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ADMIN TOP TOOLBAR (Visible when logged in) */}
       {isAdminLoggedIn && (
         <AdminBar
@@ -761,54 +777,68 @@ export default function App() {
               </div>
             </div>
           ) : filteredProperties.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-3xl border border-zinc-200 p-8 space-y-5 shadow-sm max-w-2xl mx-auto my-8">
-              <div className="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center mx-auto">
-                <AlertTriangle className="w-8 h-8" />
-              </div>
-              <h3 className="text-2xl font-bold text-zinc-900">
-                {properties.length === 0
-                  ? 'No hay propiedades en la base de datos'
-                  : 'No encontramos la propiedad solicitada'}
-              </h3>
-              <p className="text-sm text-zinc-600 max-w-md mx-auto">
-                {properties.length === 0
-                  ? 'Las propiedades de ejemplo han sido eliminadas. Puedes importar tu archivo JSON descargado directamente a Firebase Firestore o cargar propiedades nuevas.'
-                  : 'Prueba ajustando los filtros de búsqueda o restableciéndolos para ver el catálogo completo.'}
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                {properties.length === 0 ? (
-                  <>
-                    <label className="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 transition-all cursor-pointer shadow-md inline-flex items-center gap-2">
-                      <Upload className="w-4 h-4" />
-                      <span>Subir archivo JSON a Firebase</span>
-                      <input
-                        type="file"
-                        accept=".json"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImportBackup(file);
-                        }}
-                      />
-                    </label>
-                    <button
-                      onClick={handleAdminTrigger}
-                      className="px-6 py-3 bg-[#48A82D] text-white font-bold rounded-xl text-xs hover:bg-[#3C8F24] transition-all cursor-pointer shadow-md inline-flex items-center gap-2"
+            <div className="text-center py-16 bg-white rounded-3xl border border-zinc-200 p-8 shadow-sm max-w-2xl mx-auto my-8 animate-fade-in">
+              {properties.length === 0 ? (
+                <div className="py-6 space-y-6 flex flex-col items-center">
+                  <Logo size="lg" variant="color" />
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-extrabold text-zinc-900 tracking-tight">
+                      Catálogo en actualización
+                    </h3>
+                    <p className="text-sm text-zinc-600 max-w-md mx-auto leading-relaxed">
+                      Actualmente estamos renovando nuestras ofertas exclusivas en General La Madrid y la zona. Por favor, contáctanos directamente para ayudarte a encontrar tu propiedad ideal de forma personalizada.
+                    </p>
+                  </div>
+                  <div className="pt-2 flex flex-col items-center gap-3">
+                    <a
+                      href="https://wa.me/5492284603168"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-[#48A82D] hover:bg-[#3C8F24] text-white font-extrabold rounded-2xl text-sm transition-all cursor-pointer shadow-md hover:scale-102"
                     >
-                      <Plus className="w-4 h-4" />
-                      <span>Cargar Propiedad Manualmente</span>
+                      <Phone className="w-4 h-4 text-white" />
+                      <span>Contactar por WhatsApp</span>
+                    </a>
+                    {isAdminLoggedIn && (
+                      <div className="pt-4 border-t border-zinc-100 w-full flex flex-col items-center gap-2">
+                        <span className="text-xs text-zinc-400 font-medium">Panel de Control (Admin)</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleAdminTrigger}
+                            className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-xl text-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Cargar Propiedad</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-6 space-y-6 flex flex-col items-center">
+                  <div className="w-16 h-16 bg-zinc-100 text-zinc-400 rounded-2xl flex items-center justify-center mx-auto">
+                    <AlertTriangle className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold text-zinc-900">
+                      No encontramos la propiedad solicitada
+                    </h3>
+                    <p className="text-sm text-zinc-600 max-w-md mx-auto leading-relaxed">
+                      Prueba ajustando los filtros de búsqueda o restableciéndolos para ver el catálogo completo.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <button
+                      onClick={handleResetFilters}
+                      className="px-6 py-3 bg-[#48A82D] hover:bg-[#3C8F24] text-white font-bold rounded-xl text-xs hover:scale-102 transition-all cursor-pointer shadow-md inline-flex items-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Ver todas las propiedades</span>
                     </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleResetFilters}
-                    className="px-6 py-3 bg-[#48A82D] text-white font-bold rounded-xl text-xs hover:bg-[#3C8F24] transition-all cursor-pointer shadow-md inline-flex items-center gap-2"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>Ver todas las propiedades</span>
-                  </button>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : viewMode === 'grid' ? (
             <div className="space-y-10">

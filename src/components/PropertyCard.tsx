@@ -1,7 +1,45 @@
 import React, { useState } from 'react';
-import { Heart, MapPin, Maximize, Bed, Bath, Car, Trees, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Star, Flame, Instagram, Edit3, Trash2, ArrowUp, ArrowDown, Home } from 'lucide-react';
+import { Heart, MapPin, Maximize, Bed, Bath, Car, Trees, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Star, Flame, Instagram, Edit3, Trash2, ArrowUp, ArrowDown, Home, Image } from 'lucide-react';
 import { Property } from '../types';
 import { getAssetUrl, formatLocationName } from '../lib/utils';
+
+interface PropertyImagePlaceholderProps {
+  title?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export const PropertyImagePlaceholder: React.FC<PropertyImagePlaceholderProps> = ({ title, size = 'md' }) => {
+  return (
+    <div className="w-full h-full bg-zinc-50 border border-zinc-100 flex flex-col items-center justify-center p-4 text-center select-none relative animate-fade-in">
+      <div className="absolute inset-0 bg-radial from-white to-zinc-50/40 opacity-50 pointer-events-none" />
+      <div className="relative flex flex-col items-center max-w-[85%] space-y-2.5">
+        {/* Elegant subtle home outline with clean border */}
+        <div className="w-11 h-11 rounded-2xl bg-[#48A82D]/8 text-[#48A82D] flex items-center justify-center border border-[#48A82D]/15 shadow-2xs">
+          <Home className="w-5 h-5" />
+        </div>
+        
+        {/* Brand logo in full color */}
+        <img 
+          src={getAssetUrl('/mef-logo.png')} 
+          alt="María Eugenia Fernández" 
+          className={`${size === 'sm' ? 'h-9' : size === 'lg' ? 'h-14' : 'h-11'} w-auto object-contain`}
+          onError={(e) => {
+            e.currentTarget.src = getAssetUrl('/MEF_logo_svg.png');
+          }}
+        />
+        
+        <div className="space-y-0.5">
+          <span className="text-[11px] font-black text-zinc-800 tracking-tight block uppercase">
+            Fotografías en edición
+          </span>
+          <span className="text-[9px] text-zinc-500 max-w-[170px] leading-normal block">
+            Próximamente disponible en el catálogo
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 
 interface PropertyCardProps {
@@ -32,6 +70,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [failedImageIndexes, setFailedImageIndexes] = useState<Record<number, boolean>>({});
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -101,12 +140,18 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <img
-          src={property.images?.[currentImageIndex] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'}
-          alt={property.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
-          onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
-        />
+        {!property.images || property.images.length === 0 || failedImageIndexes[currentImageIndex] ? (
+          <PropertyImagePlaceholder size="sm" />
+        ) : (
+          <img
+            src={property.images[currentImageIndex]}
+            alt={property.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+            onError={() => {
+              setFailedImageIndexes((prev) => ({ ...prev, [currentImageIndex]: true }));
+            }}
+          />
+        )}
         
         {/* Subtle Logo Watermark Overlay */}
         <div className="absolute bottom-3 right-3 pointer-events-none opacity-[0.4] z-10 w-12 h-12">
@@ -176,7 +221,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             </span>
           )}
           {(property.videoUrl || property.instagramUrl) && (
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-rose-600 text-white uppercase tracking-wider flex items-center gap-1 shadow-sm">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)] text-white uppercase tracking-wider flex items-center gap-1 shadow-sm">
               <Instagram className="w-3.5 h-3.5 text-white shrink-0" />
               <span>VIDEO IG</span>
             </span>
