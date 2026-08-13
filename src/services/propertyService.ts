@@ -220,10 +220,29 @@ export const subscribeToProperties = (
         }
 
         const firestorePropsMap = new Map<string, Property>();
+        const freshFirestoreProperties: Property[] = [];
         snapshot.docs.forEach((docSnap) => {
           const prop = mapDocToProperty(docSnap.id, docSnap.data());
           firestorePropsMap.set(prop.id, prop);
+          freshFirestoreProperties.push(prop);
         });
+
+        // Sync Firestore updates into localStorage so local cache never stays stale
+        try {
+          const currentLocal = getCustomLocalProperties();
+          const localMap = new Map<string, Property>();
+          currentLocal.forEach((p) => localMap.set(p.id, p));
+
+          // Override local map with fresh Firestore data
+          freshFirestoreProperties.forEach((fsProp) => {
+            localMap.set(fsProp.id, fsProp);
+          });
+
+          const syncedLocalList = Array.from(localMap.values());
+          localStorage.setItem(CUSTOM_PROPERTIES_KEY, JSON.stringify(syncedLocalList));
+        } catch (e) {
+          console.warn('Error syncing Firestore to localStorage cache:', e);
+        }
 
         // Add local custom properties if they aren't in Firestore yet
         const customLocal = getCustomLocalProperties();
