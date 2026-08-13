@@ -324,34 +324,18 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
     amenity.toLowerCase().includes(amenitySearchQuery.toLowerCase())
   );
 
-  // Helper to parse & normalize image URLs from textarea, supporting commas inside query params or Cloudinary paths
+  // Helper to parse & normalize image URLs from textarea (by newlines, commas, or semicolons)
   const parsedImageUrls = useMemo(() => {
     if (!imageUrlsText) return [];
-    
-    // Split by newlines first
-    const lines = imageUrlsText.split(/\r?\n/);
+    const items = imageUrlsText.split(/[\r\n,;]+/);
     const result: string[] = [];
     const seen = new Set<string>();
 
-    for (let line of lines) {
-      line = line.trim();
-      if (!line) continue;
-
-      // We only split on comma if the next non-whitespace character starts a new URL
-      // (e.g., http://, https://, www., data:). This preserves commas inside a single URL.
-      let parts: string[] = [];
-      if (line.includes('http') || line.includes('www.')) {
-        parts = line.split(/,(?=\s*(?:https?:\/\/|www\.|data:))/i);
-      } else {
-        parts = [line];
-      }
-
-      for (const part of parts) {
-        const normalized = normalizeImageUrl(part);
-        if (normalized && normalized.length > 5 && !seen.has(normalized)) {
-          seen.add(normalized);
-          result.push(normalized);
-        }
+    for (const raw of items) {
+      const normalized = normalizeImageUrl(raw);
+      if (normalized && normalized.length > 5 && !seen.has(normalized)) {
+        seen.add(normalized);
+        result.push(normalized);
       }
     }
     return result;
