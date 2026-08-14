@@ -120,7 +120,15 @@ const mapDocToProperty = (id: string, data: any): Property => {
     bathrooms: Number(data.bathrooms) || 0,
     garages: Number(data.garages) || 0,
     description: data.description || '',
-    images: Array.isArray(data.images) ? data.images : [],
+    images: Array.isArray(data.images)
+      ? data.images.filter(Boolean)
+      : typeof data.images === 'string' && data.images.trim()
+      ? data.images.split(/[\r\n,;]+/).map((s: string) => s.trim()).filter(Boolean)
+      : data.imageUrl
+      ? [data.imageUrl]
+      : data.image
+      ? [data.image]
+      : [],
     featured: Boolean(data.featured),
     isNewDevelopment: Boolean(data.isNewDevelopment),
     isRecentlyUploaded: Boolean(data.isRecentlyUploaded),

@@ -33,8 +33,8 @@ import { addPropertyToFirestore, updatePropertyInFirestore, saveCustomLocalPrope
 export const normalizeImageUrl = (rawUrl: string): string => {
   if (!rawUrl) return '';
   let url = rawUrl.trim();
-  // Strip surrounding quotes, commas, brackets, trailing spaces
-  url = url.replace(/^['"<\[\s]+|['">\]\s,;]+$/g, '');
+  // Strip surrounding quotes, brackets, angle brackets, leading/trailing punctuation
+  url = url.replace(/^['"<\[\(\s]+|['">\]\)\s,;]+$/g, '');
 
   if (!url) return '';
 
@@ -44,6 +44,7 @@ export const normalizeImageUrl = (rawUrl: string): string => {
   }
 
   // Google Drive URLs:
+  // e.g. drive.google.com/file/d/ID, /open?id=ID, /uc?id=ID
   const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
                      url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/i) ||
                      url.match(/drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/i);
@@ -56,9 +57,9 @@ export const normalizeImageUrl = (rawUrl: string): string => {
     return url.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace('?dl=0', '').replace('&dl=0', '');
   }
 
-  // Imgur page links
+  // Imgur page links (e.g. imgur.com/aBcDeFg -> i.imgur.com/aBcDeFg.jpg)
   const imgurMatch = url.match(/imgur\.com\/([a-zA-Z0-9]+)$/i);
-  if (imgurMatch && imgurMatch[1]) {
+  if (imgurMatch && imgurMatch[1] && !url.includes('i.imgur.com')) {
     return `https://i.imgur.com/${imgurMatch[1]}.jpg`;
   }
 
@@ -68,12 +69,46 @@ export const normalizeImageUrl = (rawUrl: string): string => {
   } else if (url.startsWith('//')) {
     url = 'https:' + url;
   } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    if (url.includes('.') && url.includes('/')) {
+    if (url.includes('.') && (url.includes('/') || url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.webp') || url.endsWith('.jpeg'))) {
       url = 'https://' + url;
     }
   }
 
   return url;
+};
+
+export const extractAndNormalizeImageUrls = (text: string): string[] => {
+  if (!text || !text.trim()) return [];
+
+  // Split by newlines first
+  const lines = text.split(/\r?\n/);
+  const candidates: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Check if line contains multiple URLs separated by commas, semicolons, or spaces
+    // e.g. "https://a.com, https://b.com" or "https://a.com https://b.com"
+    const splitParts = trimmed.split(/[,;\s]+(?=https?:\/\/|www\.|\/\/|data:)/i);
+    for (const part of splitParts) {
+      const p = part.trim();
+      if (p) candidates.push(p);
+    }
+  }
+
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  for (const raw of candidates) {
+    const normalized = normalizeImageUrl(raw);
+    if (normalized && normalized.length > 5 && !seen.has(normalized)) {
+      seen.add(normalized);
+      result.push(normalized);
+    }
+  }
+
+  return result;
 };
 
 interface AdminPropertyModalProps {
@@ -324,21 +359,9 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
     amenity.toLowerCase().includes(amenitySearchQuery.toLowerCase())
   );
 
-  // Helper to parse & normalize image URLs from textarea (by newlines, commas, or semicolons)
+  // Helper to parse & normalize image URLs from textarea (by newlines, commas, spaces, or semicolons)
   const parsedImageUrls = useMemo(() => {
-    if (!imageUrlsText) return [];
-    const items = imageUrlsText.split(/[\r\n,;]+/);
-    const result: string[] = [];
-    const seen = new Set<string>();
-
-    for (const raw of items) {
-      const normalized = normalizeImageUrl(raw);
-      if (normalized && normalized.length > 5 && !seen.has(normalized)) {
-        seen.add(normalized);
-        result.push(normalized);
-      }
-    }
-    return result;
+    return extractAndNormalizeImageUrls(imageUrlsText);
   }, [imageUrlsText]);
 
   const handleRemoveImageByIndex = (idxToRemove: number) => {
@@ -802,8 +825,20 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                             src={url}
                             alt={`Foto ${index + 1}`}
                             className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
                             onError={(e) => {
                               const img = e.currentTarget;
+                              // If it's a google drive lh3 url, try the alternate uc?export=view format
+                              if (img.src.includes('lh3.googleusercontent.com/d/')) {
+                                const parts = img.src.split('/d/');
+                                const fileId = parts[1]?.split(/[?=&#]/)[0];
+                                if (fileId && !img.dataset.triedAlt) {
+                                  img.dataset.triedAlt = 'true';
+                                  img.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                                  return;
+                                }
+                              }
                               img.style.display = 'none';
                               const parent = img.parentElement;
                               if (parent) {

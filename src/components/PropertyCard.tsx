@@ -146,6 +146,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <img
             src={property.images[currentImageIndex]}
             alt={property.title}
+            referrerPolicy="no-referrer"
+            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
             onError={() => {
               setFailedImageIndexes((prev) => ({ ...prev, [currentImageIndex]: true }));

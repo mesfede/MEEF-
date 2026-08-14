@@ -84,6 +84,7 @@ export const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
                 <img
                   src={p.images?.[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'}
                   alt={p.title}
+                  referrerPolicy="no-referrer"
                   className="w-20 h-20 rounded-xl object-cover shrink-0 cursor-pointer"
                   onError={(e) => { if (e.currentTarget.dataset.hasError) return; e.currentTarget.dataset.hasError = 'true'; e.currentTarget.src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80'; }}
                   onClick={() => {

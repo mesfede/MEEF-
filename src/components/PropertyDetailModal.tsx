@@ -168,6 +168,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                   <img
                     src={property.images[activeImageIndex]}
                     alt={property.title}
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover transition-all duration-300 group-hover:scale-102"
                     onError={() => {
                       setFailedImageIndexes((prev) => ({ ...prev, [activeImageIndex]: true }));
@@ -294,6 +295,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                           <img
                             src={img}
                             alt={`Foto ${idx + 1}`}
+                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover"
                             onError={() => {
                               setFailedImageIndexes((prev) => ({ ...prev, [idx]: true }));
@@ -727,6 +729,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 <img
                   src={zoomImage || ''}
                   alt="Foto ampliada"
+                  referrerPolicy="no-referrer"
                   className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
                   onError={() => {
                     const idx = property.images.indexOf(zoomImage || '');
