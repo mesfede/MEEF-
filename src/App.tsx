@@ -131,6 +131,22 @@ export default function App() {
   const [propertyToEdit, setPropertyToEdit] = useState<Property | null>(null);
 
   // Global UI State
+
+  const handlePropertySelect = (p: Property | null) => {
+    setSelectedProperty(p);
+    if (p) {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('propiedad', p.id);
+      window.history.pushState({}, '', newUrl.toString());
+      document.title = `${p.title} - MARÍA EUGENIA FERNÁNDEZ`;
+    } else {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('propiedad');
+      window.history.pushState({}, '', newUrl.toString());
+      document.title = 'MARÍA EUGENIA FERNÁNDEZ | Negocios Inmobiliarios';
+    }
+  };
+
   const [currency, setCurrency] = useState<'USD' | 'ARS'>('USD');
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
@@ -273,6 +289,35 @@ export default function App() {
   const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
   const ITEMS_PER_PAGE = 9;
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  
+  // Handle URL routing for properties
+  useEffect(() => {
+    if (properties.length === 0) return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const propId = searchParams.get('propiedad');
+    if (propId) {
+      const property = properties.find(p => p.id === propId);
+      if (property && (!selectedProperty || selectedProperty.id !== propId)) {
+        setSelectedProperty(property);
+      }
+    }
+  }, [properties]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const propId = searchParams.get('propiedad');
+      if (propId) {
+        const property = properties.find(p => p.id === propId);
+        if (property) setSelectedProperty(property);
+      } else {
+        setSelectedProperty(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [properties]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -605,7 +650,7 @@ export default function App() {
           <RecentSpotlight
             properties={properties}
             currency={currency}
-            onSelectProperty={(p) => setSelectedProperty(p)}
+            onSelectProperty={(p) => handlePropertySelect(p)}
           />
 
           {/* SECTION HEADER BAR */}
@@ -850,7 +895,7 @@ export default function App() {
                     currency={currency}
                     isFavorite={favorites.includes(property.id)}
                     onToggleFavorite={handleToggleFavorite}
-                    onSelectProperty={(p) => setSelectedProperty(p)}
+                    onSelectProperty={(p) => handlePropertySelect(p)}
                     isAdmin={isAdminLoggedIn}
                     onEditProperty={handleEditProperty}
                     onDeleteProperty={handleDeleteProperty}
@@ -918,7 +963,7 @@ export default function App() {
             <MapView
               properties={filteredProperties}
               currency={currency}
-              onSelectProperty={(p) => setSelectedProperty(p)}
+              onSelectProperty={(p) => handlePropertySelect(p)}
             />
           )}
         </section>
@@ -975,7 +1020,7 @@ export default function App() {
       <PropertyDetailModal
         property={selectedProperty}
         currency={currency}
-        onClose={() => setSelectedProperty(null)}
+        onClose={() => handlePropertySelect(null)}
         isFavorite={selectedProperty ? favorites.includes(selectedProperty.id) : false}
         onToggleFavorite={handleToggleFavorite}
         isAdmin={isAdminLoggedIn}
@@ -993,14 +1038,14 @@ export default function App() {
         favoriteProperties={favoritePropertiesList}
         currency={currency}
         onRemoveFavorite={handleToggleFavorite}
-        onSelectProperty={(p) => setSelectedProperty(p)}
+        onSelectProperty={(p) => handlePropertySelect(p)}
       />
 
       <GoogleMapsModal
         isOpen={googleMapsModalOpen}
         onClose={() => setGoogleMapsModalOpen(false)}
         properties={properties}
-        onSelectProperty={(p) => setSelectedProperty(p)}
+        onSelectProperty={(p) => handlePropertySelect(p)}
       />
 
       {/* ADMIN MODALS */}
