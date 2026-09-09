@@ -9,6 +9,14 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// Security headers middleware
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
 // API health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', app: 'MEF Negocios Inmobiliarios' });
@@ -104,6 +112,14 @@ Sitemap: https://mefnegociosinmobiliarios.ar/sitemap.xml`
 
 app.get('/sitemap.xml', (_req, res) => {
   res.type('application/xml');
+  const distSitemap = path.join(distPath, 'sitemap.xml');
+  const publicSitemap = path.join(process.cwd(), 'public', 'sitemap.xml');
+  if (fs.existsSync(distSitemap)) {
+    return res.sendFile(distSitemap);
+  }
+  if (fs.existsSync(publicSitemap)) {
+    return res.sendFile(publicSitemap);
+  }
   const today = new Date().toISOString().split('T')[0];
   res.send(
 `<?xml version="1.0" encoding="UTF-8"?>

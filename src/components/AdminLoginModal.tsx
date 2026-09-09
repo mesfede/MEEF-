@@ -31,14 +31,14 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   const verifyAndGrantAccess = (userEmail: string) => {
     const cleanEmail = userEmail.trim().toLowerCase();
-    if (cleanEmail === AUTHORIZED_ADMIN_EMAIL || cleanEmail.includes('admin') || cleanEmail.includes('mef')) {
-      setSuccessMsg(`¡Bienvenido Administrador! Abriendo cargador de propiedades...`);
+    if (cleanEmail === AUTHORIZED_ADMIN_EMAIL) {
+      setSuccessMsg('¡Acceso verificado! Abriendo cargador de propiedades...');
       setTimeout(() => {
         onLoginSuccess(cleanEmail);
         onClose();
       }, 500);
     } else {
-      setErrorMsg(`Acceso Denegado: La cuenta ${cleanEmail} no está autorizada. Únicamente ${AUTHORIZED_ADMIN_EMAIL} tiene acceso como administrador.`);
+      setErrorMsg(`Acceso Denegado: La cuenta ${cleanEmail} no está autorizada. Únicamente ${AUTHORIZED_ADMIN_EMAIL} tiene permisos de administración.`);
     }
   };
 
@@ -54,19 +54,12 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       verifyAndGrantAccess(userEmail);
     } catch (err: any) {
       console.warn('Google Auth notice:', err);
-      // Popup blocked or auth provider not enabled in console fallback:
-      if (
-        err.code === 'auth/popup-blocked' ||
-        err.code === 'auth/operation-not-allowed' ||
-        err.code === 'auth/unauthorized-domain'
-      ) {
-        // Direct login fallback for mesfede@gmail.com
-        verifyAndGrantAccess(AUTHORIZED_ADMIN_EMAIL);
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        setErrorMsg('Inicio de sesión con Google cancelado.');
+      if (err.code === 'auth/popup-closed-by-user') {
+        setErrorMsg('Inicio de sesión cancelado.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setErrorMsg('Dominio no autorizado en Firebase Console para Google Auth. Use acceso con Email o agregue el dominio en Firebase.');
       } else {
-        // Fallback for demo/preview environment
-        verifyAndGrantAccess(AUTHORIZED_ADMIN_EMAIL);
+        setErrorMsg('No se pudo autenticar con Google. Intente nuevamente o utilice email y contraseña.');
       }
     } finally {
       setLoading(false);
@@ -90,10 +83,22 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       verifyAndGrantAccess(cred.user.email || email);
     } catch (err: any) {
       console.warn('Firebase Auth email login notice:', err);
-      if (password === 'admin123' || password === 'mef2026' || password.length >= 6) {
-        verifyAndGrantAccess(email);
+      if ((err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') && email.trim().toLowerCase() === AUTHORIZED_ADMIN_EMAIL) {
+        try {
+          const newCred = await createUserWithEmailAndPassword(auth, email, password);
+          verifyAndGrantAccess(newCred.user.email || email);
+          return;
+        } catch (createErr: any) {
+          setErrorMsg(createErr.message || 'Error de credenciales.');
+          return;
+        }
+      }
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setErrorMsg('Contraseña incorrecta. Verifique sus credenciales.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setErrorMsg('Demasiados intentos fallidos. Espere unos momentos.');
       } else {
-        setErrorMsg('Contraseña incorrecta. Intente con su clave o admin123');
+        setErrorMsg('Credenciales inválidas. Verifique su email y contraseña.');
       }
     } finally {
       setLoading(false);

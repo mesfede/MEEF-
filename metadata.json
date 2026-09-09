@@ -1,6 +1,6 @@
 {
   "name": "MEF Negocios Inmobiliarios",
-  "description": "Rediseño moderno y minimalista para MEF Negocios Inmobiliarios. Buscador de propiedades en Venta, Alquiler y Lotes con filtros avanzados.",
+  "description": "Sitio web oficial y catálogo inmobiliario de MARIA EUGENIA FERNÁNDEZ Negocios Inmobiliarios en General La Madrid. Venta, alquiler y tasaciones.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

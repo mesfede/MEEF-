@@ -94,9 +94,14 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   return (
     <section className="relative text-white py-1 sm:py-4 px-3 sm:px-6 lg:px-8 w-full flex items-end sm:items-center justify-center">
       <div className="relative z-10 max-w-6xl mx-auto text-center space-y-2 sm:space-y-5 w-full">
+        {/* Semantic H1 for Search Engines (Googlebot) and Screen Readers */}
+        <h1 className="sr-only">
+          Inmobiliaria MARÍA EUGENIA FERNÁNDEZ en General La Madrid | Propiedades, Casas, Terrenos y Campos en Venta y Alquiler
+        </h1>
+
         {/* Desktop Hero Headline (Typewriter) */}
-        <div className="hidden sm:flex min-h-[5.5rem] lg:min-h-[6.5rem] items-center justify-center px-2 py-1 overflow-hidden">
-          <h1 className="tracking-tight text-center max-w-6xl mx-auto flex flex-col items-center justify-center gap-0 leading-tight">
+        <div className="hidden sm:flex min-h-[5.5rem] lg:min-h-[6.5rem] items-center justify-center px-2 py-1 overflow-hidden" aria-hidden="true">
+          <div className="tracking-tight text-center max-w-6xl mx-auto flex flex-col items-center justify-center gap-0 leading-tight">
             {/* Line 1: White Text (Light) */}
             <span 
               className="block sm:text-5xl lg:text-[3.6rem] font-light text-white leading-tight text-center drop-shadow-[0_2px_1.5px_rgba(0,0,0,0.95)]"
@@ -115,7 +120,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 <span className="inline-block sm:w-[4px] h-[0.8em] bg-[#48A82D] ml-1.5 animate-pulse align-middle rounded-full drop-shadow-[0_2px_1.5px_rgba(0,0,0,0.95)]" />
               )}
             </span>
-          </h1>
+          </div>
         </div>
 
         {/* TRANSLUCENT WHITE GLASS SEARCH WIDGET CARD */}
