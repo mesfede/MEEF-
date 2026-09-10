@@ -10,8 +10,8 @@
   RewriteCond %{HTTPS} off
   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-  # Direct access to robots.txt and sitemap.xml
-  RewriteRule ^(robots\.txt|sitemap\.xml)$ - [L]
+  # Direct access to robots.txt, sitemap.xml and Google verification files
+  RewriteRule ^(robots\.txt|sitemap\.xml|google[a-z0-9]+\.html)$ - [L]
 
   # React SPA Fallback Routing
   RewriteBase /

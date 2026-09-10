@@ -28,8 +28,9 @@ import { AboutSection } from './components/AboutSection';
 import { Footer } from './components/Footer';
 import { RecentSpotlight } from './components/RecentSpotlight';
 import { AdminBar } from './components/AdminBar';
-import { AdminLoginModal } from './components/AdminLoginModal';
+import { AdminLoginModal, isAuthorizedAdmin } from './components/AdminLoginModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
+import { auth } from './lib/firebase';
 import { SEOHead } from './components/SEOHead';
 import { MAP_BG_DATA_URL } from './assets/mapBgData';
 
@@ -114,16 +115,19 @@ export default function App() {
   // Admin Auth & Modal States
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('mef_admin_logged_in') === 'true';
+      const logged = localStorage.getItem('mef_admin_logged_in') === 'true';
+      const email = localStorage.getItem('mef_admin_email') || '';
+      return logged && isAuthorizedAdmin(email);
     } catch {
       return false;
     }
   });
   const [adminEmail, setAdminEmail] = useState<string>(() => {
     try {
-      return localStorage.getItem('mef_admin_email') || 'admin@mefnegociosinmobiliarios.ar';
+      const saved = localStorage.getItem('mef_admin_email') || '';
+      return isAuthorizedAdmin(saved) ? saved : 'mesfede@gmail.com';
     } catch {
-      return 'admin@mefnegociosinmobiliarios.ar';
+      return 'mesfede@gmail.com';
     }
   });
   const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false);
@@ -212,6 +216,7 @@ export default function App() {
 
   const handleLogoutAdmin = () => {
     setIsAdminLoggedIn(false);
+    auth.signOut().catch(() => {});
     try {
       localStorage.removeItem('mef_admin_logged_in');
       localStorage.removeItem('mef_admin_email');
