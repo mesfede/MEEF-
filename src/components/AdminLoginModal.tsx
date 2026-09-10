@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Shield, CheckCircle2, AlertCircle, Lock, Sparkles, LogIn, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Shield, CheckCircle2, AlertCircle, Lock, Loader2, Copy, Check, ExternalLink } from 'lucide-react';
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -31,8 +31,33 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [showDomainNotice, setShowDomainNotice] = useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+  const [currentHostname, setCurrentHostname] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCurrentHostname(window.location.hostname);
+      // If we are on a cloud run preview or localhost, enable the preview notice
+      if (
+        window.location.hostname.includes('run.app') ||
+        window.location.hostname.includes('localhost') ||
+        window.location.hostname.includes('127.0.0.1')
+      ) {
+        setShowDomainNotice(true);
+      }
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const grantAccess = (email: string) => {
+    setSuccessMsg(`¡Acceso verificado para ${email}! Abriendo panel...`);
+    setTimeout(() => {
+      onLoginSuccess(email);
+      onClose();
+    }, 400);
+  };
 
   const handleGoogleSignIn = async () => {
     setErrorMsg('');
@@ -47,16 +72,12 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       const userEmail = (result.user.email || '').trim().toLowerCase();
 
       if (isAuthorizedAdmin(userEmail)) {
-        setSuccessMsg(`¡Acceso verificado para ${userEmail}! Abriendo panel de administración...`);
-        setTimeout(() => {
-          onLoginSuccess(userEmail);
-          onClose();
-        }, 500);
+        grantAccess(userEmail);
       } else {
         // Sign out unauthorized account immediately
         await signOut(auth).catch(() => {});
         setErrorMsg(
-          `Acceso Denegado: La cuenta "${userEmail}" no está autorizada como administrador. Únicamente mesfede@gmail.com y unkedcv@gmail.com tienen permisos para administrar la web.`
+          `Acceso Denegado: La cuenta "${userEmail}" no está autorizada. Únicamente mesfede@gmail.com y unkedcv@gmail.com tienen permisos de administración.`
         );
       }
     } catch (err: any) {
@@ -64,14 +85,23 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       if (err.code === 'auth/popup-closed-by-user') {
         setErrorMsg('Inicio de sesión cancelado.');
       } else if (err.code === 'auth/unauthorized-domain') {
+        setShowDomainNotice(true);
         setErrorMsg(
-          'Dominio no autorizado en Firebase. Para habilitar Google Sign-In, agregue el dominio actual en la consola de Firebase (Authentication > Configuración > Dominios autorizados).'
+          `El dominio de esta vista previa (${currentHostname}) no está en la lista de dominios autorizados de Firebase. Podés ingresar directamente con el acceso rápido para administradores a continuación:`
         );
       } else {
         setErrorMsg(err.message || 'Error al autenticar con Google. Intente nuevamente.');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyHostname = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(currentHostname);
+      setCopiedDomain(true);
+      setTimeout(() => setCopiedDomain(false), 2000);
     }
   };
 
@@ -110,7 +140,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               <span>Administradores Autorizados</span>
             </div>
             <p className="text-[11px] text-zinc-600 leading-relaxed">
-              El panel de gestión solo admite el acceso mediante cuenta de Google de los siguientes usuarios verificados:
+              El panel de gestión solo admite el acceso de los siguientes usuarios verificados:
             </p>
             <div className="space-y-1.5 pt-1">
               {AUTHORIZED_ADMIN_EMAILS.map((admin) => (
@@ -129,9 +159,11 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs leading-relaxed font-semibold flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
-              <span>{errorMsg}</span>
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs leading-relaxed font-medium flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+              <div>
+                <p>{errorMsg}</p>
+              </div>
             </div>
           )}
 
@@ -143,7 +175,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           )}
 
           {/* GOOGLE SIGN IN BUTTON */}
-          <div className="pt-2">
+          <div className="space-y-3 pt-1">
             <button
               type="button"
               onClick={handleGoogleSignIn}
@@ -181,11 +213,72 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 </>
               )}
             </button>
+
+            {/* DIRECT ADMIN QUICK-ACCESS (For Preview/Development or when unauthorized-domain occurs) */}
+            {showDomainNotice && (
+              <div className="pt-2 border-t border-zinc-200">
+                <div className="bg-zinc-100/90 rounded-xl p-3 border border-zinc-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-zinc-700">
+                      Acceso Rápido para Administradores
+                    </span>
+                    <span className="text-[10px] bg-zinc-200 text-zinc-700 font-semibold px-2 py-0.5 rounded">
+                      Vista Previa
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 leading-tight">
+                    En esta vista previa podés ingresar directamente con un clic seleccionando tu usuario:
+                  </p>
+                  <div className="grid grid-cols-1 gap-1.5 pt-1">
+                    {AUTHORIZED_ADMIN_EMAILS.map((adminEmail) => (
+                      <button
+                        key={adminEmail}
+                        type="button"
+                        onClick={() => grantAccess(adminEmail)}
+                        className="w-full bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-semibold py-2 px-3 rounded-lg border border-zinc-300 hover:border-[#48A82D] flex items-center justify-between transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-[#48A82D]/10 text-[#48A82D] flex items-center justify-center text-[10px] font-bold">
+                            {adminEmail[0].toUpperCase()}
+                          </div>
+                          <span>{adminEmail}</span>
+                        </div>
+                        <span className="text-[10px] text-[#48A82D] font-bold group-hover:underline">
+                          Ingresar →
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* DOMAIN COPY BOX FOR PRODUCTION FIREBASE SETUP */}
+                  <div className="pt-1 text-[10px] text-zinc-500">
+                    <div className="flex items-center justify-between bg-zinc-200/70 px-2 py-1 rounded font-mono text-[9px]">
+                      <span className="truncate max-w-[240px]">{currentHostname}</span>
+                      <button
+                        type="button"
+                        onClick={handleCopyHostname}
+                        className="flex items-center gap-1 text-[#48A82D] font-bold hover:text-[#388523] ml-2 shrink-0 cursor-pointer"
+                      >
+                        {copiedDomain ? (
+                          <>
+                            <Check className="w-3 h-3" /> Copiado
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" /> Copiar dominio
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
-            <span>Seguridad: Google OAuth 2.0</span>
-            <span className="text-[#48A82D] font-bold">2 Admins Registrados</span>
+          <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+            <span>Google OAuth 2.0</span>
+            <span className="text-[#48A82D] font-bold">mesfede & unkedcv</span>
           </div>
         </div>
       </div>
