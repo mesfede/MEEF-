@@ -33,6 +33,7 @@ import { AdminPropertyModal } from './components/AdminPropertyModal';
 import { auth } from './lib/firebase';
 import { SEOHead } from './components/SEOHead';
 import { MAP_BG_DATA_URL } from './assets/mapBgData';
+import { trackPropertyView, trackWhatsAppClick } from './lib/analytics';
 
 export default function App() {
   // Hero Video Ref & Autoplay Guarantee
@@ -139,6 +140,15 @@ export default function App() {
   const handlePropertySelect = (p: Property | null) => {
     setSelectedProperty(p);
     if (p) {
+      trackPropertyView({
+        id: p.id,
+        title: p.title,
+        type: p.type,
+        operation: p.operation,
+        price: p.priceUSD,
+        currency: 'USD',
+        city: p.location?.city,
+      });
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('propiedad', p.id);
       window.history.pushState({}, '', newUrl.toString());
@@ -1000,6 +1010,7 @@ export default function App() {
           href="https://wa.me/5492284603168?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20hacer%20una%20consulta."
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackWhatsAppClick('FloatingCTA')}
           className="pointer-events-auto bg-[#25D366] hover:bg-[#1DA851] text-white p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center border border-white/80 group"
           title="Consultar por WhatsApp"
         >

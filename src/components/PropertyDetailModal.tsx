@@ -12,6 +12,7 @@ import { X, MapPin, Maximize, Bed, Bath, Car, Phone, Mail, CheckCircle2, Chevron
 import { Property } from '../types';
 import { getAssetUrl, formatLocationName, formatFullAddress } from '../lib/utils';
 import { PropertyImagePlaceholder } from './PropertyCard';
+import { trackWhatsAppClick } from '../lib/analytics';
 
 
 interface PropertyDetailModalProps {
@@ -421,6 +422,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                   href={`https://wa.me/5492284603168?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20${encodeURIComponent(property.title)}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackWhatsAppClick('PropertyDetailModal', property.title)}
                   className="w-full bg-[#48A82D] hover:bg-[#3C8F24] text-white py-3 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
                 >
                   <Phone className="w-4 h-4" />
@@ -555,6 +557,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                     href={`https://wa.me/5492284603168?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quisiera%20solicitar%20el%20video%20de%20la%20propiedad%20${encodeURIComponent(property.title)}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackWhatsAppClick('PropertyDetailModal_Video', property.title)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-[#48A82D] text-white rounded-xl text-xs font-bold"
                   >
                     <span>Pedir Video por WhatsApp</span>

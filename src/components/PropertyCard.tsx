@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Heart, MapPin, Maximize, Bed, Bath, Car, Trees, ArrowUpRight, ChevronLeft, ChevronRight, Video, Play, Star, Flame, Instagram, Edit3, Trash2, ArrowUp, ArrowDown, Home, Image } from 'lucide-react';
 import { Property } from '../types';
 import { getAssetUrl, formatLocationName } from '../lib/utils';
+import { trackWhatsAppClick } from '../lib/analytics';
 
 interface PropertyImagePlaceholderProps {
   title?: string;
@@ -413,6 +414,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               href={`https://wa.me/5492284603168?text=Hola%20MARIA%20EUGENIA%20FERNÁNDEZ%20Inmobiliaria,%20quiero%20consultar%20por%20la%20propiedad%20${encodeURIComponent(property.title)}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsAppClick('PropertyCard', property.title)}
               className="px-3 py-2 bg-[#48A82D] hover:bg-[#3C8F24] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
               title="Consultar por WhatsApp"
             >
