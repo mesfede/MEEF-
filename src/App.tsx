@@ -480,6 +480,40 @@ export default function App() {
       if (filters.sortBy === 'price-asc') return (a.priceUSD || 0) - (b.priceUSD || 0);
       if (filters.sortBy === 'price-desc') return (b.priceUSD || 0) - (a.priceUSD || 0);
       if (filters.sortBy === 'area-desc') return (b.totalArea || 0) - (a.totalArea || 0);
+
+      // Status banner temporary boost (shows first for 7 days / 1 week, then returns to original place)
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+      const getStatusBoostTime = (p: Property): number => {
+        if (!p.statusBanner || p.statusBanner === 'NINGUNA') return 0;
+        if (p.statusBannerUpdatedAt) {
+          const bannerTime = parseSafeDate(p.statusBannerUpdatedAt);
+          if (bannerTime > 0) {
+            const elapsed = Date.now() - bannerTime;
+            if (elapsed >= 0 && elapsed <= SEVEN_DAYS_MS) {
+              return bannerTime;
+            }
+          }
+          return 0; // Expired past 7 days -> back to original place
+        }
+        // Fallback for property currently with statusBanner but without timestamp yet: boost active
+        const createdTime = parseSafeDate(p.createdAt);
+        const elapsed = Date.now() - createdTime;
+        if (createdTime > 0 && elapsed <= SEVEN_DAYS_MS) {
+          return createdTime;
+        }
+        return Date.now();
+      };
+
+      const boostA = getStatusBoostTime(a);
+      const boostB = getStatusBoostTime(b);
+      if (boostA > 0 || boostB > 0) {
+        if (boostA > 0 && boostB > 0) {
+          return boostB - boostA; // More recently tagged appears first among boosted
+        }
+        if (boostA > 0) return -1;
+        if (boostB > 0) return 1;
+      }
+
       // Default: recent (respect displayOrder if present, otherwise createdAt timestamp)
       if (a.displayOrder !== undefined || b.displayOrder !== undefined) {
         const orderA = a.displayOrder !== undefined ? a.displayOrder : 999999;

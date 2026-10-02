@@ -39,6 +39,7 @@ export interface Property {
   isNewDevelopment?: boolean;
   isRecentlyUploaded?: boolean;
   statusBanner?: string; // 'ULTIMOS_LOTES' | 'RESERVADA' | 'VENDIDA' or custom text
+  statusBannerUpdatedAt?: string; // ISO date timestamp of when the status was assigned
   videoUrl?: string; // MP4 video URL or embed link
   videoType?: 'mp4' | 'youtube' | 'instagram';
   instagramUrl?: string; // Link to Instagram post / reel

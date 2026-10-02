@@ -394,6 +394,16 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
 
     setLoading(true);
 
+    const hasStatusBanner = Boolean(statusBanner && statusBanner !== 'NINGUNA');
+    let statusBannerUpdatedAt: string | undefined = undefined;
+    if (hasStatusBanner) {
+      if (!propertyToEdit?.statusBanner || propertyToEdit.statusBanner !== statusBanner || !propertyToEdit.statusBannerUpdatedAt) {
+        statusBannerUpdatedAt = new Date().toISOString();
+      } else {
+        statusBannerUpdatedAt = propertyToEdit.statusBannerUpdatedAt;
+      }
+    }
+
     const propertyPayload: Omit<Property, 'id'> = {
       refCode: refCode.trim() || `MEF-${Math.floor(1000 + Math.random() * 9000)}`,
       title: title.trim(),
@@ -419,7 +429,8 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       featured,
       isNewDevelopment,
       isRecentlyUploaded,
-      statusBanner: statusBanner && statusBanner !== 'NINGUNA' ? statusBanner : null,
+      statusBanner: hasStatusBanner ? statusBanner : undefined,
+      statusBannerUpdatedAt,
       displayOrder: displayOrder !== '' ? Number(displayOrder) : undefined,
       videoUrl: videoUrl.trim(),
       videoType,

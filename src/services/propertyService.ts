@@ -70,6 +70,7 @@ export const saveCustomLocalProperty = (property: Property) => {
     const cleanProp: Property = {
       ...property,
       statusBanner: property.statusBanner && property.statusBanner !== 'NINGUNA' ? property.statusBanner : undefined,
+      statusBannerUpdatedAt: property.statusBanner && property.statusBanner !== 'NINGUNA' ? property.statusBannerUpdatedAt : undefined,
     };
     const idx = current.findIndex((p) => p.id === cleanProp.id || (p.refCode && p.refCode === cleanProp.refCode));
     if (idx >= 0) {
@@ -133,6 +134,7 @@ const mapDocToProperty = (id: string, data: any): Property => {
     isNewDevelopment: Boolean(data.isNewDevelopment),
     isRecentlyUploaded: Boolean(data.isRecentlyUploaded),
     statusBanner: data.statusBanner && data.statusBanner !== 'NINGUNA' ? data.statusBanner : undefined,
+    statusBannerUpdatedAt: data.statusBannerUpdatedAt || undefined,
     videoUrl: data.videoUrl || '',
     videoType: data.videoType || (data.videoUrl?.includes('youtube') ? 'youtube' : 'mp4'),
     instagramUrl: data.instagramUrl || '',

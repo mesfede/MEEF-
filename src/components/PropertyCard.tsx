@@ -132,6 +132,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     }
   };
 
+  const isSold = property.statusBanner && property.statusBanner !== 'NINGUNA' && property.statusBanner.toLowerCase().includes('vendida');
+  const isReserved = property.statusBanner && property.statusBanner !== 'NINGUNA' && property.statusBanner.toLowerCase().includes('reservada');
+
   return (
     <div className="group bg-white rounded-2xl overflow-hidden border border-zinc-200 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
       {/* CARD TOP IMAGE CONTAINER */}
@@ -149,7 +152,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             alt={property.title}
             referrerPolicy="no-referrer"
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+            className={`w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+              isSold || isReserved ? 'grayscale contrast-[1.05] brightness-90 group-hover:grayscale-[0.40] group-hover:brightness-95' : ''
+            }`}
             onError={() => {
               setFailedImageIndexes((prev) => ({ ...prev, [currentImageIndex]: true }));
             }}
@@ -161,18 +166,59 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <img src={getAssetUrl('/logo-white.png')} alt="" className="w-full h-full object-contain" />
         </div>
 
-        {/* Center Side-to-Side Status Banner */}
+        {/* Cartel Colgado Institucional (Negro y Verde #48A82D) */}
         {property.statusBanner && property.statusBanner !== 'NINGUNA' && (
-          <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 py-3 sm:py-4 px-4 text-center font-black text-sm sm:text-base uppercase tracking-widest pointer-events-none transition-all shadow-2xl ${
-            property.statusBanner.toLowerCase().includes('vendida')
-              ? 'bg-[#48A82D]/92 text-black border-y-2 border-black'
-              : property.statusBanner.toLowerCase().includes('reservada')
-              ? 'bg-zinc-600/90 text-white border-y-2 border-zinc-900'
-              : 'bg-black/88 text-white border-y-2 border-[#48A82D]'
-          }`}>
-            <span className={property.statusBanner.toLowerCase().includes('vendida') ? 'text-black mr-2' : 'text-[#48A82D] mr-2'}>●</span>
-            {property.statusBanner}
-            <span className={property.statusBanner.toLowerCase().includes('vendida') ? 'text-black ml-2' : 'text-[#48A82D] ml-2'}>●</span>
+          <div className="absolute inset-0 pointer-events-none z-20 flex flex-col items-center justify-start select-none animate-fade-in">
+            {/* Soft dark vignette over the photo */}
+            <div className="absolute inset-0 bg-black/25 pointer-events-none" />
+
+            {/* Hanging Wires - Longer to drop the sign down into the middle */}
+            <div className="relative flex justify-between w-[160px] sm:w-[190px] h-16 sm:h-20 pointer-events-none">
+              {/* Left wire */}
+              <div className="relative w-[1.5px] h-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-[#48A82D] shadow-[0_0_2px_rgba(0,0,0,0.6)]">
+                {/* Top hanging hook / anchor */}
+                <div className="absolute -top-0.5 -left-1 w-2.5 h-1.5 rounded-b-xs bg-zinc-300 border-x border-b border-zinc-500 shadow-xs" />
+              </div>
+              {/* Right wire */}
+              <div className="relative w-[1.5px] h-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-[#48A82D] shadow-[0_0_2px_rgba(0,0,0,0.6)]">
+                {/* Top hanging hook / anchor */}
+                <div className="absolute -top-0.5 -left-1 w-2.5 h-1.5 rounded-b-xs bg-zinc-300 border-x border-b border-zinc-500 shadow-xs" />
+              </div>
+            </div>
+
+            {/* Hanging Plaque Container */}
+            <div className="relative -mt-1 transform -rotate-1 group-hover:rotate-0 transition-transform duration-500 drop-shadow-[0_18px_24px_rgba(0,0,0,0.85)]">
+              {/* Plaque Board in Institutional Black & Green */}
+              <div className="bg-[#181818]/95 backdrop-blur-md border-2 border-[#48A82D] rounded-xl px-5 sm:px-6 py-2 sm:py-2.5 shadow-2xl flex flex-col items-center text-center w-[200px] sm:w-[230px]">
+                
+                {/* Corner Anchors */}
+                <div className="absolute -top-1.5 left-3.5 w-3 h-3 rounded-full bg-[#181818] border-2 border-[#48A82D] flex items-center justify-center">
+                  <div className="w-1 h-1 rounded-full bg-zinc-300" />
+                </div>
+                <div className="absolute -top-1.5 right-3.5 w-3 h-3 rounded-full bg-[#181818] border-2 border-[#48A82D] flex items-center justify-center">
+                  <div className="w-1 h-1 rounded-full bg-zinc-300" />
+                </div>
+
+                {/* Institutional Brand Header */}
+                <span className="text-[8px] sm:text-[9px] font-bold text-[#48A82D] tracking-[0.22em] uppercase font-cinzel">
+                  MARÍA EUGENIA FERNÁNDEZ
+                </span>
+
+                {/* Status Title in Cinzel with Green Accents */}
+                <div className="my-0.5 py-0.5 border-y border-[#48A82D]/40 w-full flex items-center justify-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#48A82D]" />
+                  <span className="text-lg sm:text-xl font-black text-white tracking-widest uppercase font-cinzel">
+                    {property.statusBanner}
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#48A82D]" />
+                </div>
+
+                {/* Institutional Subtitle */}
+                <span className="text-[7px] sm:text-[8px] font-semibold text-zinc-300 tracking-[0.18em] uppercase font-sans">
+                  NEGOCIOS INMOBILIARIOS
+                </span>
+              </div>
+            </div>
           </div>
         )}
 
