@@ -166,57 +166,59 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <img src={getAssetUrl('/logo-white.png')} alt="" className="w-full h-full object-contain" />
         </div>
 
-        {/* Cartel Colgado Institucional (Negro y Verde #48A82D) */}
+        {/* Cartel Colgado Institucional - Cartel Real de Inmobiliaria con Banda VENDIDA */}
         {property.statusBanner && property.statusBanner !== 'NINGUNA' && (
           <div className="absolute inset-0 pointer-events-none z-20 flex flex-col items-center justify-start select-none animate-fade-in">
             {/* Soft dark vignette over the photo */}
             <div className="absolute inset-0 bg-black/25 pointer-events-none" />
 
-            {/* Hanging Wires - Longer to drop the sign down into the middle */}
+            {/* Hanging Wires - Ultra-fine steel wire ("tipo alambre") */}
             <div className="relative flex justify-between w-[160px] sm:w-[190px] h-16 sm:h-20 pointer-events-none">
               {/* Left wire */}
-              <div className="relative w-[1.5px] h-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-[#48A82D] shadow-[0_0_2px_rgba(0,0,0,0.6)]">
+              <div className="relative w-px h-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-600 shadow-[0_0_1px_rgba(0,0,0,0.8)]">
                 {/* Top hanging hook / anchor */}
-                <div className="absolute -top-0.5 -left-1 w-2.5 h-1.5 rounded-b-xs bg-zinc-300 border-x border-b border-zinc-500 shadow-xs" />
+                <div className="absolute -top-0.5 -left-[3px] w-2 h-1 rounded-b-xs bg-zinc-400 border border-zinc-600 shadow-xs" />
               </div>
               {/* Right wire */}
-              <div className="relative w-[1.5px] h-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-[#48A82D] shadow-[0_0_2px_rgba(0,0,0,0.6)]">
+              <div className="relative w-px h-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-600 shadow-[0_0_1px_rgba(0,0,0,0.8)]">
                 {/* Top hanging hook / anchor */}
-                <div className="absolute -top-0.5 -left-1 w-2.5 h-1.5 rounded-b-xs bg-zinc-300 border-x border-b border-zinc-500 shadow-xs" />
+                <div className="absolute -top-0.5 -left-[3px] w-2 h-1 rounded-b-xs bg-zinc-400 border border-zinc-600 shadow-xs" />
               </div>
             </div>
 
             {/* Hanging Plaque Container */}
-            <div className="relative -mt-1 transform -rotate-1 group-hover:rotate-0 transition-transform duration-500 drop-shadow-[0_18px_24px_rgba(0,0,0,0.85)]">
-              {/* Plaque Board in Institutional Black & Green */}
-              <div className="bg-[#181818]/95 backdrop-blur-md border-2 border-[#48A82D] rounded-xl px-5 sm:px-6 py-2 sm:py-2.5 shadow-2xl flex flex-col items-center text-center w-[200px] sm:w-[230px]">
+            <div className="relative -mt-1 transform -rotate-1 group-hover:rotate-0 transition-transform duration-500 drop-shadow-[0_16px_25px_rgba(0,0,0,0.85)]">
+              {/* Plaque Board: Solid Institutional Green Pleno with Inner Framing Line */}
+              <div className="bg-[#48A82D] rounded-xl overflow-hidden shadow-2xl flex flex-col items-center text-center w-[210px] sm:w-[240px] border-2 border-white/90">
                 
-                {/* Corner Anchors */}
-                <div className="absolute -top-1.5 left-3.5 w-3 h-3 rounded-full bg-[#181818] border-2 border-[#48A82D] flex items-center justify-center">
-                  <div className="w-1 h-1 rounded-full bg-zinc-300" />
-                </div>
-                <div className="absolute -top-1.5 right-3.5 w-3 h-3 rounded-full bg-[#181818] border-2 border-[#48A82D] flex items-center justify-center">
-                  <div className="w-1 h-1 rounded-full bg-zinc-300" />
-                </div>
+                {/* Top Section: Verde Institucional con Logo Oficial MEF y Líneas del Logo */}
+                <div className="relative w-full pt-2.5 pb-2 px-3 flex flex-col items-center justify-center bg-[#48A82D]">
+                  {/* Corner Anchors (Ojales de fijación) */}
+                  <div className="absolute top-1.5 left-2.5 w-3 h-3 rounded-full bg-black border border-white/80 flex items-center justify-center shadow-xs">
+                    <div className="w-1 h-1 rounded-full bg-zinc-300" />
+                  </div>
+                  <div className="absolute top-1.5 right-2.5 w-3 h-3 rounded-full bg-black border border-white/80 flex items-center justify-center shadow-xs">
+                    <div className="w-1 h-1 rounded-full bg-zinc-300" />
+                  </div>
 
-                {/* Institutional Brand Header */}
-                <span className="text-[8px] sm:text-[9px] font-bold text-[#48A82D] tracking-[0.22em] uppercase font-cinzel">
-                  MARÍA EUGENIA FERNÁNDEZ
-                </span>
-
-                {/* Status Title in Cinzel with Green Accents */}
-                <div className="my-0.5 py-0.5 border-y border-[#48A82D]/40 w-full flex items-center justify-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#48A82D]" />
-                  <span className="text-lg sm:text-xl font-black text-white tracking-widest uppercase font-cinzel">
-                    {property.statusBanner}
-                  </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#48A82D]" />
+                  {/* Logo Oficial Blanco con sus líneas institucionales */}
+                  <img
+                    src={getAssetUrl('/logo-white.png')}
+                    alt="María Eugenia Fernández"
+                    className="h-6 sm:h-7 w-auto object-contain drop-shadow-xs"
+                  />
                 </div>
 
-                {/* Institutional Subtitle */}
-                <span className="text-[7px] sm:text-[8px] font-semibold text-zinc-300 tracking-[0.18em] uppercase font-sans">
-                  NEGOCIOS INMOBILIARIOS
-                </span>
+                {/* Banda Negra Plena con Letra Blanca: VENDIDA / Estado */}
+                <div className="w-full bg-black py-1.5 sm:py-2 px-3 flex items-center justify-center border-t-2 border-white shadow-inner">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#48A82D]" />
+                    <span className="text-base sm:text-lg font-black text-white tracking-[0.2em] uppercase font-cinzel leading-none drop-shadow-xs">
+                      {property.statusBanner}
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#48A82D]" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
