@@ -397,10 +397,14 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
     const hasStatusBanner = Boolean(statusBanner && statusBanner !== 'NINGUNA');
     let statusBannerUpdatedAt: string | undefined = undefined;
     if (hasStatusBanner) {
-      if (!propertyToEdit?.statusBanner || propertyToEdit.statusBanner !== statusBanner || !propertyToEdit.statusBannerUpdatedAt) {
+      const prevBanner =
+        propertyToEdit?.statusBanner && propertyToEdit.statusBanner !== 'NINGUNA'
+          ? propertyToEdit.statusBanner
+          : undefined;
+      if (!prevBanner || prevBanner !== statusBanner) {
         statusBannerUpdatedAt = new Date().toISOString();
       } else {
-        statusBannerUpdatedAt = propertyToEdit.statusBannerUpdatedAt;
+        statusBannerUpdatedAt = propertyToEdit?.statusBannerUpdatedAt;
       }
     }
 
@@ -1031,7 +1035,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                 <option value="Vendida">Vendida</option>
               </select>
               <p className="text-[11px] text-zinc-500">
-                Aparecerá en el centro de la ficha cubriendo todo el ancho de la imagen principal.
+                Al activarla, la propiedad aparecerá primera en el catálogo durante 7 días con el cartel colgado; luego volverá automáticamente a su posición original manteniendo el cartel.
               </p>
             </div>
 

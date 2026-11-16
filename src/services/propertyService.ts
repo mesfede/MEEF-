@@ -12,6 +12,7 @@ import {
   limit,
   Timestamp,
   writeBatch,
+  deleteField,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Property } from '../types';
@@ -134,7 +135,10 @@ const mapDocToProperty = (id: string, data: any): Property => {
     isNewDevelopment: Boolean(data.isNewDevelopment),
     isRecentlyUploaded: Boolean(data.isRecentlyUploaded),
     statusBanner: data.statusBanner && data.statusBanner !== 'NINGUNA' ? data.statusBanner : undefined,
-    statusBannerUpdatedAt: data.statusBannerUpdatedAt || undefined,
+    statusBannerUpdatedAt:
+      typeof data.statusBannerUpdatedAt?.toDate === 'function'
+        ? data.statusBannerUpdatedAt.toDate().toISOString()
+        : data.statusBannerUpdatedAt || undefined,
     videoUrl: data.videoUrl || '',
     videoType: data.videoType || (data.videoUrl?.includes('youtube') ? 'youtube' : 'mp4'),
     instagramUrl: data.instagramUrl || '',
@@ -146,7 +150,10 @@ const mapDocToProperty = (id: string, data: any): Property => {
       email: data.agent?.email || 'contacto@mefnegociosinmobiliarios.ar',
       avatar: data.agent?.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
     },
-    createdAt: data.createdAt || new Date().toISOString().split('T')[0],
+    createdAt:
+      typeof data.createdAt?.toDate === 'function'
+        ? data.createdAt.toDate().toISOString()
+        : data.createdAt || new Date().toISOString().split('T')[0],
   };
 };
 
@@ -449,10 +456,19 @@ export const updatePropertyInFirestore = async (id: string, propertyData: Partia
 
   if (db) {
     const docRef = doc(db, PROPERTIES_COLLECTION, id);
-    const cleanData = removeUndefinedValues({
+    const cleanData: Record<string, any> = removeUndefinedValues({
       ...propertyData,
       updatedAt: Timestamp.now(),
     });
+    if ('statusBanner' in propertyData && (!propertyData.statusBanner || propertyData.statusBanner === 'NINGUNA')) {
+      cleanData.statusBanner = deleteField();
+      cleanData.statusBannerUpdatedAt = deleteField();
+    } else if ('statusBannerUpdatedAt' in propertyData && !propertyData.statusBannerUpdatedAt) {
+      cleanData.statusBannerUpdatedAt = deleteField();
+    }
+    if ('displayOrder' in propertyData && propertyData.displayOrder === undefined) {
+      cleanData.displayOrder = deleteField();
+    }
     setDoc(docRef, cleanData, { merge: true }).catch(e => {
       console.warn('Firestore update notice:', e);
     });

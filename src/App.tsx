@@ -495,13 +495,16 @@ export default function App() {
           }
           return 0; // Expired past 7 days -> back to original place
         }
-        // Fallback for property currently with statusBanner but without timestamp yet: boost active
+        // Legacy properties with statusBanner but no statusBannerUpdatedAt:
+        // only boost if created within the last 7 days; otherwise return 0 so they stay in their original place.
         const createdTime = parseSafeDate(p.createdAt);
-        const elapsed = Date.now() - createdTime;
-        if (createdTime > 0 && elapsed <= SEVEN_DAYS_MS) {
-          return createdTime;
+        if (createdTime > 0) {
+          const elapsed = Date.now() - createdTime;
+          if (elapsed >= 0 && elapsed <= SEVEN_DAYS_MS) {
+            return createdTime;
+          }
         }
-        return Date.now();
+        return 0;
       };
 
       const boostA = getStatusBoostTime(a);

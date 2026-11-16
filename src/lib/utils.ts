@@ -60,16 +60,17 @@ export const formatFullAddress = (address?: string, zone?: string, city?: string
  */
 export const parseSafeDate = (dateStr?: string): number => {
   if (!dateStr) return 0;
-  // Handle standard YYYY-MM-DD
-  const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
+  const trimmed = dateStr.trim();
+  // Handle date-only YYYY-MM-DD safely across Safari/mobile browsers
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [yearStr, monthStr, dayStr] = trimmed.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10) - 1;
+    const day = parseInt(dayStr, 10);
     const d = new Date(year, month, day);
     if (!isNaN(d.getTime())) return d.getTime();
   }
-  const parsed = Date.parse(dateStr);
+  const parsed = Date.parse(trimmed);
   return isNaN(parsed) ? 0 : parsed;
 };
 
